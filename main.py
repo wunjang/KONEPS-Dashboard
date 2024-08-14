@@ -5,7 +5,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def index():
-    script = server_document('http://localhost:5000/bkapp')
+    script = server_document('http://3.27.183.61:5006/KONEPS-Dashboard')
     return render_template('index.html', script=script)
 
 if __name__ == '__main__':

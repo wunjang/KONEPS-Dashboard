@@ -1,0 +1,62 @@
+2024-08-13 13:44:50,326 Starting Bokeh server version 3.5.1 (running on Tornado 6.4.1)
+2024-08-13 13:44:50,327 Host wildcard '*' will allow connections originating from multiple (or possibly all) hostnames or IPs. Use non-wildcard values to restrict access explicitly
+2024-08-13 13:44:50,328 User authentication hooks NOT provided (default user enabled)
+2024-08-13 13:44:50,335 Bokeh app running at: http://0.0.0.0:5006/KONEPS-Dashboard
+2024-08-13 13:44:50,335 Starting Bokeh server with process id: 13812
+2024-08-13 14:45:20,065 Starting Bokeh server version 3.5.1 (running on Tornado 6.4.1)
+2024-08-13 14:45:20,066 Cannot start Bokeh server, port 5006 is already in use
+2024-08-13 14:52:58,717 404 GET /?vscodeBrowserReqId=1723560777953 (127.0.0.1) 0.54ms
+2024-08-13 14:53:54,349 Starting Bokeh server version 3.5.1 (running on Tornado 6.4.1)
+2024-08-13 14:53:54,350 Cannot start Bokeh server, port 5006 is already in use
+2024-08-13 14:54:10,122 404 GET /?vscodeBrowserReqId=1723560850102 (127.0.0.1) 0.43ms
+Received signal 15, shutting down
+2024-08-13 14:56:31,852 Starting Bokeh server version 3.5.1 (running on Tornado 6.4.1)
+2024-08-13 14:56:31,854 User authentication hooks NOT provided (default user enabled)
+2024-08-13 14:56:31,861 Bokeh app running at: http://0.0.0.0:5006/KONEPS-Dashboard
+2024-08-13 14:56:31,861 Starting Bokeh server with process id: 16298
+2024-08-13 14:57:12,922 404 GET /?vscodeBrowserReqId=1723561032150 (127.0.0.1) 0.56ms
+2024-08-13 14:57:47,138 Refusing websocket connection from Origin 'http://localhost:8000';                       use --allow-websocket-origin=localhost:8000 or set BOKEH_ALLOW_WS_ORIGIN=localhost:8000 to permit this; currently we allow origins {'3.107.84.179:8000'}
+2024-08-13 14:57:47,139 403 GET /KONEPS-Dashboard/ws?vscodeBrowserReqId=1723561061652 (127.0.0.1) 0.64ms
+Received signal 15, shutting down
+2024-08-13 15:00:05,560 Starting Bokeh server version 3.5.1 (running on Tornado 6.4.1)
+2024-08-13 15:00:05,562 User authentication hooks NOT provided (default user enabled)
+2024-08-13 15:00:05,570 Bokeh app running at: http://0.0.0.0:5006/KONEPS-Dashboard
+2024-08-13 15:00:05,570 Starting Bokeh server with process id: 16712
+Received signal 15, shutting down
+2024-08-13 15:04:38,831 Starting Bokeh server version 3.5.1 (running on Tornado 6.4.1)
+2024-08-13 15:04:38,832 User authentication hooks NOT provided (default user enabled)
+2024-08-13 15:04:38,835 Bokeh app running at: http://0.0.0.0:5006/KONEPS-Dashboard
+2024-08-13 15:04:38,835 Starting Bokeh server with process id: 16924
+2024-08-13 15:07:04,466 WebSocket connection opened
+2024-08-13 15:07:04,466 ServerConnection created
+2024-08-13 15:07:45,308 WebSocket connection closed: code=1001, reason=None
+2024-08-13 15:07:45,982 WebSocket connection opened
+2024-08-13 15:07:45,983 ServerConnection created
+2024-08-13 15:11:05,802 WebSocket connection closed: code=1001, reason=None
+2024-08-14 06:07:54,301 WebSocket connection opened
+2024-08-14 06:07:55,248 ServerConnection created
+2024-08-14 06:08:22,345 WebSocket connection closed: code=None, reason=None
+2024-08-14 06:08:27,103 Failed sending message as connection was closed
+2024-08-14 06:08:35,064 WebSocket connection opened
+2024-08-14 06:08:35,171 ServerConnection created
+2024-08-14 06:08:48,716 Failed sending message as connection was closed
+2024-08-14 06:08:48,869 Failed sending message as connection was closed
+2024-08-14 06:08:48,877 WebSocket connection closed: code=None, reason=None
+2024-08-14 07:14:30,339 Starting Bokeh server version 3.5.1 (running on Tornado 6.4.1)
+2024-08-14 07:14:30,342 User authentication hooks NOT provided (default user enabled)
+2024-08-14 07:14:30,347 Bokeh app running at: http://0.0.0.0:5006/KONEPS-Dashboard
+2024-08-14 07:14:30,348 Starting Bokeh server with process id: 1969
+2024-08-14 07:16:17,545 WebSocket connection opened
+2024-08-14 07:16:17,546 ServerConnection created
+2024-08-14 07:18:11,856 WebSocket connection closed: code=1001, reason=None
+2024-08-14 07:18:12,449 WebSocket connection opened
+2024-08-14 07:18:12,449 ServerConnection created
+2024-08-14 07:18:41,478 WebSocket connection closed: code=1001, reason=None
+2024-08-14 07:18:41,940 WebSocket connection opened
+2024-08-14 07:18:41,941 ServerConnection created
+Received signal 15, shutting down
+2024-08-14 07:33:14,176 Starting Bokeh server version 3.5.1 (running on Tornado 6.4.1)
+2024-08-14 07:33:14,178 User authentication hooks NOT provided (default user enabled)
+2024-08-14 07:33:14,184 Bokeh app running at: http://0.0.0.0:5006/KONEPS-Dashboard
+2024-08-14 07:33:14,185 Starting Bokeh server with process id: 2614
+Received signal 15, shutting down
