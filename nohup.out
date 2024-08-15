@@ -60,3 +60,132 @@ Received signal 15, shutting down
 2024-08-14 07:33:14,184 Bokeh app running at: http://0.0.0.0:5006/KONEPS-Dashboard
 2024-08-14 07:33:14,185 Starting Bokeh server with process id: 2614
 Received signal 15, shutting down
+2024-08-14 10:46:54,324 Starting Bokeh server version 3.5.1 (running on Tornado 6.4.1)
+2024-08-14 10:46:54,326 Host wildcard '*' will allow connections originating from multiple (or possibly all) hostnames or IPs. Use non-wildcard values to restrict access explicitly
+2024-08-14 10:46:54,327 User authentication hooks NOT provided (default user enabled)
+2024-08-14 10:46:54,330 Bokeh app running at: http://0.0.0.0:5006/KONEPS-Dashboard
+2024-08-14 10:46:54,330 Starting Bokeh server with process id: 3711
+Received signal 15, shutting down
+2024-08-14 10:48:33,361 Starting Bokeh server version 3.5.1 (running on Tornado 6.4.1)
+2024-08-14 10:48:33,362 User authentication hooks NOT provided (default user enabled)
+2024-08-14 10:48:33,365 Bokeh app running at: http://0.0.0.0:5006/KONEPS-Dashboard
+2024-08-14 10:48:33,365 Starting Bokeh server with process id: 3715
+2024-08-14 10:54:26,416 Error running application handler <bokeh.application.handlers.script.ScriptHandler object at 0x7318e5cd6e10>: cannot import name 'Figure' from 'bokeh.models' (/home/ubuntu/myenv/lib/python3.12/site-packages/bokeh/models/__init__.py)
+File 'KONEPS-Dashboard.py', line 4, in <module>:
+from bokeh.models import TextInput, Button, ColumnDataSource, Figure Traceback (most recent call last):
+  File "/home/ubuntu/myenv/lib/python3.12/site-packages/bokeh/application/handlers/code_runner.py", line 229, in run
+    exec(self._code, module.__dict__)
+  File "/home/ubuntu/KONEPS-Dashboard/KONEPS-Dashboard.py", line 4, in <module>
+    from bokeh.models import TextInput, Button, ColumnDataSource, Figure
+ImportError: cannot import name 'Figure' from 'bokeh.models' (/home/ubuntu/myenv/lib/python3.12/site-packages/bokeh/models/__init__.py)
+ 
+2024-08-14 10:54:29,326 WebSocket connection opened
+2024-08-14 10:54:29,327 ServerConnection created
+2024-08-14 10:54:59,011 WebSocket connection closed: code=1001, reason=None
+2024-08-14 10:54:59,076 Error running application handler <bokeh.application.handlers.script.ScriptHandler object at 0x7318e5cd6e10>: cannot import name 'Figure' from 'bokeh.models' (/home/ubuntu/myenv/lib/python3.12/site-packages/bokeh/models/__init__.py)
+File 'KONEPS-Dashboard.py', line 4, in <module>:
+from bokeh.models import TextInput, Button, ColumnDataSource, Figure Traceback (most recent call last):
+  File "/home/ubuntu/myenv/lib/python3.12/site-packages/bokeh/application/handlers/code_runner.py", line 229, in run
+    exec(self._code, module.__dict__)
+  File "/home/ubuntu/KONEPS-Dashboard/KONEPS-Dashboard.py", line 4, in <module>
+    from bokeh.models import TextInput, Button, ColumnDataSource, Figure
+ImportError: cannot import name 'Figure' from 'bokeh.models' (/home/ubuntu/myenv/lib/python3.12/site-packages/bokeh/models/__init__.py)
+ 
+2024-08-14 10:54:59,726 WebSocket connection opened
+2024-08-14 10:54:59,726 ServerConnection created
+2024-08-14 10:55:52,509 WebSocket connection closed: code=1001, reason=None
+2024-08-14 10:55:52,572 Error running application handler <bokeh.application.handlers.script.ScriptHandler object at 0x7318e5cd6e10>: cannot import name 'Figure' from 'bokeh.models' (/home/ubuntu/myenv/lib/python3.12/site-packages/bokeh/models/__init__.py)
+File 'KONEPS-Dashboard.py', line 4, in <module>:
+from bokeh.models import TextInput, Button, ColumnDataSource, Figure Traceback (most recent call last):
+  File "/home/ubuntu/myenv/lib/python3.12/site-packages/bokeh/application/handlers/code_runner.py", line 229, in run
+    exec(self._code, module.__dict__)
+  File "/home/ubuntu/KONEPS-Dashboard/KONEPS-Dashboard.py", line 4, in <module>
+    from bokeh.models import TextInput, Button, ColumnDataSource, Figure
+ImportError: cannot import name 'Figure' from 'bokeh.models' (/home/ubuntu/myenv/lib/python3.12/site-packages/bokeh/models/__init__.py)
+ 
+2024-08-14 10:55:53,077 WebSocket connection opened
+2024-08-14 10:55:53,078 ServerConnection created
+2024-08-14 10:56:00,831 WebSocket connection closed: code=1001, reason=None
+2024-08-14 10:56:03,437 Error running application handler <bokeh.application.handlers.script.ScriptHandler object at 0x7318e5cd6e10>: cannot import name 'Figure' from 'bokeh.models' (/home/ubuntu/myenv/lib/python3.12/site-packages/bokeh/models/__init__.py)
+File 'KONEPS-Dashboard.py', line 4, in <module>:
+from bokeh.models import TextInput, Button, ColumnDataSource, Figure Traceback (most recent call last):
+  File "/home/ubuntu/myenv/lib/python3.12/site-packages/bokeh/application/handlers/code_runner.py", line 229, in run
+    exec(self._code, module.__dict__)
+  File "/home/ubuntu/KONEPS-Dashboard/KONEPS-Dashboard.py", line 4, in <module>
+    from bokeh.models import TextInput, Button, ColumnDataSource, Figure
+ImportError: cannot import name 'Figure' from 'bokeh.models' (/home/ubuntu/myenv/lib/python3.12/site-packages/bokeh/models/__init__.py)
+ 
+2024-08-14 10:56:03,814 WebSocket connection opened
+2024-08-14 10:56:03,814 ServerConnection created
+Received signal 15, shutting down
+2024-08-14 10:56:48,224 Starting Bokeh server version 3.5.1 (running on Tornado 6.4.1)
+2024-08-14 10:56:48,225 User authentication hooks NOT provided (default user enabled)
+2024-08-14 10:56:48,228 Bokeh app running at: http://0.0.0.0:5006/KONEPS-Dashboard
+2024-08-14 10:56:48,228 Starting Bokeh server with process id: 3803
+2024-08-14 10:56:58,310 Error running application handler <bokeh.application.handlers.script.ScriptHandler object at 0x7f0b3b8d7d70>: cannot import name 'Figure' from 'bokeh.models' (/home/ubuntu/myenv/lib/python3.12/site-packages/bokeh/models/__init__.py)
+File 'KONEPS-Dashboard.py', line 4, in <module>:
+from bokeh.models import TextInput, Button, ColumnDataSource, Figure Traceback (most recent call last):
+  File "/home/ubuntu/myenv/lib/python3.12/site-packages/bokeh/application/handlers/code_runner.py", line 229, in run
+    exec(self._code, module.__dict__)
+  File "/home/ubuntu/KONEPS-Dashboard/KONEPS-Dashboard.py", line 4, in <module>
+    from bokeh.models import TextInput, Button, ColumnDataSource, Figure
+ImportError: cannot import name 'Figure' from 'bokeh.models' (/home/ubuntu/myenv/lib/python3.12/site-packages/bokeh/models/__init__.py)
+ 
+2024-08-14 10:56:58,789 WebSocket connection opened
+2024-08-14 10:56:58,790 ServerConnection created
+[2024-08-14 10:57:59 +0000] [3816] [INFO] Starting gunicorn 23.0.0
+[2024-08-14 10:57:59 +0000] [3816] [INFO] Listening at: http://0.0.0.0:8000 (3816)
+[2024-08-14 10:57:59 +0000] [3816] [INFO] Using worker: sync
+[2024-08-14 10:57:59 +0000] [3817] [INFO] Booting worker with pid: 3817
+2024-08-14 10:58:05,072 WebSocket connection closed: code=1001, reason=None
+2024-08-14 10:58:05,123 Error running application handler <bokeh.application.handlers.script.ScriptHandler object at 0x7f0b3b8d7d70>: cannot import name 'Figure' from 'bokeh.models' (/home/ubuntu/myenv/lib/python3.12/site-packages/bokeh/models/__init__.py)
+File 'KONEPS-Dashboard.py', line 4, in <module>:
+from bokeh.models import TextInput, Button, ColumnDataSource, Figure Traceback (most recent call last):
+  File "/home/ubuntu/myenv/lib/python3.12/site-packages/bokeh/application/handlers/code_runner.py", line 229, in run
+    exec(self._code, module.__dict__)
+  File "/home/ubuntu/KONEPS-Dashboard/KONEPS-Dashboard.py", line 4, in <module>
+    from bokeh.models import TextInput, Button, ColumnDataSource, Figure
+ImportError: cannot import name 'Figure' from 'bokeh.models' (/home/ubuntu/myenv/lib/python3.12/site-packages/bokeh/models/__init__.py)
+ 
+2024-08-14 10:58:05,582 WebSocket connection opened
+2024-08-14 10:58:05,582 ServerConnection created
+Received signal 15, shutting down
+[2024-08-14 11:01:41 +0000] [3816] [INFO] Handling signal: term
+[2024-08-14 11:01:41 +0000] [3817] [INFO] Worker exiting (pid: 3817)
+[2024-08-14 11:01:41 +0000] [3816] [INFO] Shutting down: Master
+[2024-08-14 11:12:53 +0000] [3912] [INFO] Starting gunicorn 23.0.0
+[2024-08-14 11:12:53 +0000] [3912] [INFO] Listening at: http://0.0.0.0:8000 (3912)
+[2024-08-14 11:12:53 +0000] [3912] [INFO] Using worker: sync
+[2024-08-14 11:12:53 +0000] [3913] [INFO] Booting worker with pid: 3913
+2024-08-14 11:12:54,447 Starting Bokeh server version 3.5.1 (running on Tornado 6.4.1)
+2024-08-14 11:12:54,448 User authentication hooks NOT provided (default user enabled)
+2024-08-14 11:12:54,451 Bokeh app running at: http://0.0.0.0:5006/KONEPS-Dashboard
+2024-08-14 11:12:54,451 Starting Bokeh server with process id: 3911
+Received signal 15, shutting down
+[2024-08-14 11:16:06 +0000] [3912] [INFO] Handling signal: term
+[2024-08-14 11:16:06 +0000] [3913] [INFO] Worker exiting (pid: 3913)
+[2024-08-14 11:16:07 +0000] [3912] [INFO] Shutting down: Master
+[2024-08-14 11:16:07 +0000] [3957] [INFO] Starting gunicorn 23.0.0
+[2024-08-14 11:16:07 +0000] [3957] [INFO] Listening at: http://0.0.0.0:8000 (3957)
+[2024-08-14 11:16:07 +0000] [3957] [INFO] Using worker: sync
+[2024-08-14 11:16:07 +0000] [3958] [INFO] Booting worker with pid: 3958
+2024-08-14 11:16:09,254 Starting Bokeh server version 3.5.1 (running on Tornado 6.4.1)
+2024-08-14 11:16:09,255 User authentication hooks NOT provided (default user enabled)
+2024-08-14 11:16:09,258 Bokeh app running at: http://0.0.0.0:5006/KONEPS-Dashboard
+2024-08-14 11:16:09,258 Starting Bokeh server with process id: 3956
+Received signal 15, shutting down
+[2024-08-14 11:17:21 +0000] [3957] [INFO] Handling signal: term
+[2024-08-14 11:17:21 +0000] [3958] [INFO] Worker exiting (pid: 3958)
+[2024-08-14 11:17:22 +0000] [3957] [INFO] Shutting down: Master
+[2024-08-14 11:17:22 +0000] [4005] [INFO] Starting gunicorn 23.0.0
+[2024-08-14 11:17:22 +0000] [4005] [INFO] Listening at: http://0.0.0.0:8000 (4005)
+[2024-08-14 11:17:22 +0000] [4005] [INFO] Using worker: sync
+[2024-08-14 11:17:22 +0000] [4006] [INFO] Booting worker with pid: 4006
+2024-08-14 11:17:24,195 Starting Bokeh server version 3.5.1 (running on Tornado 6.4.1)
+2024-08-14 11:17:24,197 User authentication hooks NOT provided (default user enabled)
+2024-08-14 11:17:24,200 Bokeh app running at: http://0.0.0.0:5006/KONEPS-Dashboard
+2024-08-14 11:17:24,200 Starting Bokeh server with process id: 4004
+Received signal 15, shutting down
+[2024-08-14 11:17:50 +0000] [4005] [INFO] Handling signal: term
+[2024-08-14 11:17:50 +0000] [4006] [INFO] Worker exiting (pid: 4006)
+[2024-08-14 11:17:50 +0000] [4005] [INFO] Shutting down: Master
