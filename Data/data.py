@@ -14,7 +14,7 @@ def GetConnection():
     print(f"An error occurred: {e}")
     return 0
   
-def GetBidResultsByBidNo(bidNo):
+def GetBidResultsByBidNo(bidNo, isPrint=False):
   """
   Parameters:
   - bidNo(int): 공고번호
@@ -32,9 +32,11 @@ def GetBidResultsByBidNo(bidNo):
  
   cur.close()
   conn.close()
+  if isPrint:
+    print(result)
   return result
 
-def GetBizResultsByBizNo(bizNo):
+def GetBizResultsByBizNo(bizNo, isPrint=False):
   """
   Parameters:
   - bizNo(int): 사업자번호
@@ -52,4 +54,6 @@ def GetBizResultsByBizNo(bizNo):
   
   cur.close()
   conn.close()
+  if isPrint:
+    print(result)
   return result

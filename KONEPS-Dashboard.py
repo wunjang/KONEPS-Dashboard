@@ -2,28 +2,45 @@ import Data.data as data_module
 import pandas as pd
 from bokeh.plotting import figure
 from bokeh.io import curdoc
-from bokeh.models import ColumnDataSource, HoverTool, LinearColorMapper, ColorBar, TextInput, Button, DataTable, TableColumn, NumberFormatter, StringFormatter
+from bokeh.models import ColumnDataSource, HoverTool, LinearColorMapper, ColorBar, TextInput, Button, DataTable, TableColumn, NumberFormatter, StringFormatter, RadioButtonGroup, Range1d
 from bokeh.layouts import column, row
 import numpy as np
 
-def update_plot():
-    bid_no = bid_no_input.value
-    if not bid_no:
+def search_callback():
+    input_value = input_field.value
+    if not input_value:
         return
+    
+    selected_option = search_options[radio_button_group.active]
+    if selected_option == "공고번호":
+        update_barplot(data_module.GetBidResultsByBidNo(input_value))
+    elif selected_option == "사업자번호":
+        update_barplot(data_module.GetBizResultsByBizNo(input_value))
+        update_lineplot(data_module.GetBizResultsByBizNo(input_value))
 
-    data_list = data_module.GetBidResultsByBidNo(bid_no)
+def update_lineplot(data_list):
+    """공고번호에 따라 데이터를 정렬하여 꺾은선 그래프를 그립니다"""
+    update_datatable(data_list)
 
-    # Update data table
-    table_data.data = {
-        '공고번호': [item[1] for item in data_list],
-        '업체명': [item[2] for item in data_list],
-        '대표명': [item[3] for item in data_list],
-        '사업자번호': [item[4] for item in data_list],
-        '순위': [item[5] for item in data_list],
-        '입찰액': [item[6] for item in data_list],
-        '투찰율': [float(item[7]) for item in data_list],
-        '사정율': [float(item[8]) for item in data_list]
+    sorted_data = sorted(data_list, key=lambda x: x[1])  # 공고번호로 정렬
+    
+    #line_plot.x_range[sorted_data[1]]
+
+    line_plot.line()
+
+    #rank_1_source = ColumnDataSource(sorted_data[sorted_data[5] == 1])
+    #line_plot.circle('bidno', 'biddiff', size=8, source=rank_1_source, color='red', legend_label='Bidrank 1', fill_alpha=0.6, line_color=None)
+
+    line_plot.y_range = Range1d(start=0.7, end=1.3)
+    
+    line_data.data = {
+        'bidno': [item[1] for item in sorted_data],
+        'biddiff': [float(item[8]) for item in sorted_data],
+        'rank': [item[5] for item in sorted_data]
     }
+
+def update_barplot(data_list):
+    update_datatable(data_list)
 
     # 데이터 추출 및 필터링
     bid_diff = [float(item[8]) for item in data_list]
@@ -70,34 +87,50 @@ def update_plot():
     )
 
 # Bokeh 레이아웃 구성 요소
-bid_no_input = TextInput(value="", title="Enter Bid Number:")
-submit_button = Button(label="Show Bid Results", button_type="success")
+input_field = TextInput(value="", title="Enter Bid Number:")
+submit_button = Button(label="검색", button_type="success")
 
-submit_button.on_click(update_plot)
+submit_button.on_click(search_callback)
+
+search_options = ["공고번호", "사업자번호"]
+radio_button_group = RadioButtonGroup(labels=search_options, active = 0)
 
 # Color mapper for bar colors
 color_mapper = LinearColorMapper(palette="Viridis256")
 
-# Initial empty plot
+# Initial plots
 source = ColumnDataSource(data=dict(top=[], left=[], right=[], biz_names=[], line_color=[], line_width=[]))
-p = figure(title="Bar Chart of Values with bizName Tooltips", tools="", background_fill_color="#fafafa", x_range=(0.96, 1.04))
-p.quad(top='top', bottom=0, left='left', right='right', source=source, fill_color={'field':'top', 'transform': color_mapper}, line_color='line_color', line_width='line_width', alpha=0.7)
+bar_plot = figure(title="사정율 히스토그램", tools="", background_fill_color="#fafafa", x_range=(0.96, 1.04))
+bar_plot.quad(top='top', bottom=0, left='left', right='right', source=source, fill_color={'field':'top', 'transform': color_mapper}, line_color='line_color', line_width='line_width', alpha=0.7)
+
+line_data = ColumnDataSource(data=dict(bidno=[], biddiff=[], rank=[]))
+line_plot = figure(title="사정률 변화 추세", tools="", background_fill_color="#fafafa")
+#line_plot.quad(top='top', bottom=0, left='left', right='right', source=line_data, fill_color={'field':'top', 'transform': color_mapper}, line_color='line_color', line_width='line_width', alpha=0.7)
+line_plot.line('bidno', 'biddiff', source=line_data, line_width=2, color='blue', legend_label='사정율')
 
 # Add tooltips
-hover = HoverTool()
-hover.tooltips = [
-    ("Value", "@left{0.000} - @right{0.000}"),
-    ("Frequency", "@top"),
-    ("bizName", "@biz_names{safe}")
+bar_hover = HoverTool()
+bar_hover.tooltips = [
+    ("범위", "@left{0.000} - @right{0.000}"),
+    ("값", "@top"),
+    ("업체명", "@biz_names{safe}")
 ]
-p.add_tools(hover)
+bar_plot.add_tools(bar_hover)
+
+line_hover = HoverTool()
+line_hover.tooltips = [
+    ("공고번호", "@bidno"),
+    ("사정율", "@biddiff"),
+    ("순위", "@rank")
+]
+line_plot.add_tools(line_hover)
 
 # DataTable 구성
 columns = [
     TableColumn(field="공고번호", title="공고번호", formatter=StringFormatter()),
     TableColumn(field="업체명", title="업체명", formatter=StringFormatter()),
     TableColumn(field="대표명", title="대표명", formatter=StringFormatter()),
-    TableColumn(field="사업자번호", title="사업자번호", formatter=NumberFormatter()),
+    TableColumn(field="사업자번호", title="사업자번호", formatter=StringFormatter()),
     TableColumn(field="순위", title="순위", formatter=StringFormatter()),
     TableColumn(field="입찰액", title="입찰액", formatter=NumberFormatter(format="0,0")),
     TableColumn(field="투찰율", title="투찰율", formatter=NumberFormatter(format="0.0000")),
@@ -107,8 +140,21 @@ columns = [
 table_data = ColumnDataSource(data=dict(공고번호=[], 업체명=[], 대표명=[], 사업자번호=[], 순위=[], 입찰액=[], 투찰율=[], 사정율=[]))
 data_table = DataTable(source=table_data, columns=columns, width=800)
 
+def update_datatable(data_list):
+    # Update data table
+    table_data.data = {
+        '공고번호': [item[1] for item in data_list],
+        '업체명': [item[2] for item in data_list],
+        '대표명': [item[3] for item in data_list],
+        '사업자번호': [item[4] for item in data_list],
+        '순위': [item[5] for item in data_list],
+        '입찰액': [item[6] for item in data_list],
+        '투찰율': [float(item[7]) for item in data_list],
+        '사정율': [float(item[8]) for item in data_list]
+    }
+
 # Layout
-layout = column(bid_no_input, submit_button, p, data_table)
+layout = column(radio_button_group, row(input_field, submit_button), row(bar_plot, line_plot), data_table)
 
 # Bokeh 서버에 레이아웃 추가
 curdoc().add_root(layout)
