@@ -2,26 +2,34 @@ import Data.data as data_module
 import pandas as pd
 from bokeh.plotting import figure
 from bokeh.io import curdoc
-from bokeh.models import ColumnDataSource, HoverTool, LinearColorMapper, ColorBar, TextInput, Button, DataTable, TableColumn, NumberFormatter, StringFormatter, DateFormatter, RadioButtonGroup, Range1d, WheelZoomTool, BoxZoomTool, ResetTool
+from bokeh.models import (
+    ColumnDataSource, HoverTool, LinearColorMapper, 
+    ColorBar, TextInput, Button, DataTable, TableColumn, 
+    NumberFormatter, StringFormatter, DateFormatter, RadioButtonGroup, Range1d,
+    DatePicker
+)
+from bokeh.models.tools import WheelZoomTool, BoxZoomTool, ResetTool
 from bokeh.layouts import column, row
 import numpy as np
+import datetime
+from dateutil.relativedelta import relativedelta
 
 def search_callback():
     input_value = input_field.value.rstrip()
     if not input_value:
         return
     
-    selected_option = search_options[radio_button_group.active]
+    selected_option = search_options[search_radio.active]
     if selected_option == "공고번호":
-        line_plot.visible = False
         update_barplot(data_module.fetch_bidresults_by_bid(input_value))
     elif selected_option == "사업자번호":
-        line_plot.visible = True
-        update_barplot(data_module.fetch_bidresults_by_biz(input_value))
-        update_lineplot(data_module.fetch_bidresults_by_biz(input_value))
+        update_barplot(data_module.fetch_bidresults_by_biz(input_value, date_picker_begin.value, date_picker_end.value))
+        update_lineplot(data_module.fetch_bidresults_by_biz(input_value, date_picker_begin.value, date_picker_end.value))
 
 def update_lineplot(data_list):
     """공고번호에 따라 데이터를 정렬하여 꺾은선 그래프를 그립니다"""
+    if not data_list:
+        return
     update_datatable(data_list)
 
     sorted_data = sorted(data_list, key=lambda x: x[10])  # 공고일자로 정렬
@@ -47,6 +55,8 @@ def update_lineplot(data_list):
 
 
 def update_barplot(data_list):
+    if not data_list:
+        return
     update_datatable(data_list)
 
     # 데이터 추출 및 필터링
@@ -100,7 +110,17 @@ submit_button = Button(label="검색", button_type="success")
 submit_button.on_click(search_callback)
 
 search_options = ["공고번호", "사업자번호"]
-radio_button_group = RadioButtonGroup(labels=search_options, active = 0)
+search_radio = RadioButtonGroup(labels=search_options, active = 0)
+
+def update_search_radio(attr, old, new):
+    if new == 0:
+        for item in biz_options:
+            item.visible = False
+    if new == 1:
+        for item in biz_options:
+            item.visible = True
+
+search_radio.on_change('active', update_search_radio)
 
 # Color mapper for bar colors
 color_mapper = LinearColorMapper(palette="Viridis256")
@@ -149,6 +169,27 @@ wheel_zoom = WheelZoomTool()
 #bar_plot.toolbar.active_scroll = wheel_zoom
 #bar_plot.toolbar.active_scroll.axis = 'x'
 
+
+date_picker_begin = DatePicker(title="시작일")
+date_picker_end = DatePicker(title="종료일")
+
+date_range_options = ["선택", "최근 3개월", "최근 6개월", "최근 1년"]
+date_range_radio = RadioButtonGroup(labels=date_range_options, active=0)
+
+def update_date_range_radio(attr, old, new):
+    today = datetime.date.today()
+    if new == 1:
+        date_picker_begin.value = today - relativedelta(months=3)
+        date_picker_end.value = today
+    elif new == 2:
+        date_picker_begin.value = today - relativedelta(months=6)
+        date_picker_end.value = today
+    elif new == 3:
+        date_picker_begin.value = today - relativedelta(years=1)
+        date_picker_end.value = today
+
+date_range_radio.on_change('active', update_date_range_radio)
+
 # DataTable 구성
 columns = [
     TableColumn(field="bidNo", title="공고번호", formatter=StringFormatter()),
@@ -181,9 +222,13 @@ def update_datatable(data_list):
         'bidDate': [pd.to_datetime(item[10]) for item in data_list],
     }
 
+
+biz_options = [line_plot, date_picker_begin, date_picker_end, date_range_radio]
+for item in biz_options:
+    item.visible = False
+
 # Layout
-line_plot.visible = False
-layout = column(radio_button_group, row(input_field, submit_button), row(bar_plot, line_plot), data_table)
+layout = column(search_radio, row(input_field, submit_button), row(date_picker_begin, date_picker_end, date_range_radio), row(bar_plot, line_plot), data_table)
 
 # Bokeh 서버에 레이아웃 추가
 curdoc().add_root(layout)

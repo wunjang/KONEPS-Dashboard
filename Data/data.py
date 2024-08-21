@@ -1,5 +1,5 @@
 import psycopg2
-from datetime import datetime
+import datetime
 
 def execute_query(query, params=None):
   try:
@@ -57,48 +57,35 @@ def fetch_bids_by_bid(bid_no):
   result = execute_query(query, params)
   return result
 
-def fetch_bidresults_by_biz(biz_no, date_begin: datetime=None, date_end: datetime=None):
+def fetch_bidresults_by_biz(biz_no, date_begin=None, date_end=None):
   """
   Parameters:
   - biz_no(int): 사업자번호
+  - date_begin(datetime): 필터링할 날짜 구간의 시작일
+  - date_end(datetime): 필터링할 날짜 구간의 종료일
   Returns:
   - (id,공고번호,업체명,대표명,사업자번호,등수,입찰액,투찰율,사정율,예가범위,공고일자)
   """
-  if isinstance(date_begin, datetime) and isinstance(date_end, datetime):
-    query = """
-    SELECT 
-        br.*,
-        b.pricerange,
-        b.biddate
-    FROM 
-        bidresults br
-    JOIN 
-        bids b
-    ON 
-        br.bidno = b.bidno
-    WHERE 
-        br.bizno = %s AND
-        br.biddate >= %s AND
-        br.biddate <= %s;
-    """
-    date_begin_str = date_begin.strftime('%Y-%m-%d %H:%M:%S')
-    date_end_str = date_end.strftime('%Y-%m-%d %H:%M:%S')
-    params = (biz_no, date_begin_str, date_end_str)
-  else:
-    query = """
-      SELECT 
-          br.*,
-          b.pricerange,
-          b.biddate
-      FROM 
-          bidresults br
-      JOIN 
-          bids b
-      ON 
-          br.bidno = b.bidno
-      WHERE 
-          br.bizno = %s;
-      """
-    params = (biz_no,)
+  if not date_begin:
+    date_begin = datetime.datetime.min
+  if not date_end:
+    date_end = datetime.date.today()
+  query = """
+  SELECT 
+      br.*,
+      b.pricerange,
+      b.biddate
+  FROM 
+      bidresults br
+  JOIN 
+      bids b
+  ON 
+      br.bidno = b.bidno
+  WHERE 
+      br.bizno = %s AND
+      b.biddate >= %s AND
+      b.biddate <= %s;
+  """
+  params = (biz_no, date_begin, date_end)
   result = execute_query(query, params)
   return result
