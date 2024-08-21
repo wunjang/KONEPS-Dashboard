@@ -14,11 +14,11 @@ def search_callback():
     selected_option = search_options[radio_button_group.active]
     if selected_option == "공고번호":
         line_plot.visible = False
-        update_barplot(data_module.GetBidResultsByBidNo(input_value))
+        update_barplot(data_module.fetch_bidresults_by_bid(input_value))
     elif selected_option == "사업자번호":
         line_plot.visible = True
-        update_barplot(data_module.GetBidResultsByBizNo(input_value))
-        update_lineplot(data_module.GetBidResultsByBizNo(input_value))
+        update_barplot(data_module.fetch_bidresults_by_biz(input_value))
+        update_lineplot(data_module.fetch_bidresults_by_biz(input_value))
 
 def update_lineplot(data_list):
     """공고번호에 따라 데이터를 정렬하여 꺾은선 그래프를 그립니다"""
