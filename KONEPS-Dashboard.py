@@ -4,9 +4,9 @@ from bokeh.plotting import figure
 from bokeh.io import curdoc
 from bokeh.models import (
     ColumnDataSource, HoverTool, LinearColorMapper, 
-    ColorBar, TextInput, Button, DataTable, TableColumn, 
+    TextInput, Button, DataTable, TableColumn, 
     NumberFormatter, StringFormatter, DateFormatter, RadioButtonGroup, Range1d,
-    DatePicker
+    DatePicker, Dropdown, RangeSlider
 )
 from bokeh.models.tools import WheelZoomTool, BoxZoomTool, ResetTool
 from bokeh.layouts import column, row
@@ -14,23 +14,33 @@ import numpy as np
 import datetime
 from dateutil.relativedelta import relativedelta
 
+fetched_data = None
 def search_callback():
     input_value = input_field.value.rstrip()
     if not input_value:
         return
     
+    global fetched_data
     selected_option = search_options[search_radio.active]
     if selected_option == "공고번호":
-        update_barplot(data_module.fetch_bidresults_by_bid(input_value))
+        fetched_data = data_module.fetch_bidresults_by_bid(input_value)
+        update_barplot(fetched_data)
     elif selected_option == "사업자번호":
-        update_barplot(data_module.fetch_bidresults_by_biz(input_value, date_picker_begin.value, date_picker_end.value))
-        update_lineplot(data_module.fetch_bidresults_by_biz(input_value, date_picker_begin.value, date_picker_end.value))
+        fetched_data = data_module.fetch_bidresults_by_biz(input_value)
+        filtered_data = data_module.filter_bidresults(data_list=fetched_data, date_begin=date_picker_begin.value, date_end=date_picker_end.value, )
+        update_barplot(filtered_data)
+        update_lineplot(filtered_data)
+    biz_count_min = min(fetched_data, key=lambda x: x[11])
+    biz_count_max = max(fetched_data, key=lambda x: x[11])
+    biz_count_range_slider.start = biz_count_min[11]
+    biz_count_range_slider.end = biz_count_max[11]
+    biz_count_range_slider.value = (biz_count_min[11], biz_count_max[11])
 
 def update_lineplot(data_list):
     """공고번호에 따라 데이터를 정렬하여 꺾은선 그래프를 그립니다"""
     if not data_list:
         return
-    update_datatable(data_list)
+    
 
     sorted_data = sorted(data_list, key=lambda x: x[10])  # 공고일자로 정렬
     
@@ -40,7 +50,6 @@ def update_lineplot(data_list):
     #line_plot.circle('bidno', 'biddiff', size=8, source=rank_1_source, color='red', legend_label='Bidrank 1', fill_alpha=0.6, line_color=None)
 
     line_plot.y_range = Range1d(start=0.7, end=1.3)
-    print(type(sorted_data[0][10]))
     line_data.data = {
         'bidNo': [item[1] for item in sorted_data],
         'bidDiff': [float(item[8]) for item in sorted_data],
@@ -53,6 +62,7 @@ def update_lineplot(data_list):
     # 새로운 라인 추가
     line_plot.line('bidDate', 'bidDiff', source=line_data, line_width=2, color='blue')
 
+    
 
 def update_barplot(data_list):
     if not data_list:
@@ -94,7 +104,7 @@ def update_barplot(data_list):
     line_widths = [2 if any(flags) else 1 for flags in highlight_flags_for_bins]
 
     # Prepare data for Bokeh
-    source.data = dict(
+    bar_data.data = dict(
         top=hist,
         left=edges[:-1],
         right=edges[1:],
@@ -108,17 +118,16 @@ input_field = TextInput(value="", title="Enter Bid Number:")
 submit_button = Button(label="검색", button_type="success")
 
 submit_button.on_click(search_callback)
+input_field.on_event('value_submit', search_callback)
 
 search_options = ["공고번호", "사업자번호"]
 search_radio = RadioButtonGroup(labels=search_options, active = 0)
 
 def update_search_radio(attr, old, new):
     if new == 0:
-        for item in biz_options:
-            item.visible = False
+        show_biz_search_options(False)
     if new == 1:
-        for item in biz_options:
-            item.visible = True
+        show_biz_search_options(True)
 
 search_radio.on_change('active', update_search_radio)
 
@@ -126,9 +135,9 @@ search_radio.on_change('active', update_search_radio)
 color_mapper = LinearColorMapper(palette="Viridis256")
 
 # Initial plots
-source = ColumnDataSource(data=dict(top=[], left=[], right=[], biz_names=[], line_color=[], line_width=[]))
+bar_data = ColumnDataSource(data=dict(top=[], left=[], right=[], biz_names=[], line_color=[], line_width=[]))
 bar_plot = figure(title="사정율 구간별 등장 횟수", tools="", background_fill_color="#fafafa", x_range=(0.97, 1.03))
-bar_plot.quad(top='top', bottom=0, left='left', right='right', source=source, fill_color={'field':'top', 'transform': color_mapper}, line_color='line_color', line_width='line_width', alpha=0.7)
+bar_plot.quad(top='top', bottom=0, left='left', right='right', source=bar_data, fill_color={'field':'top', 'transform': color_mapper}, line_color='line_color', line_width='line_width', alpha=0.7)
 bar_plot.min_border = 75
 
 line_data = ColumnDataSource(data=dict(bidNo=[], bidDiff=[], rank=[], bidDate=[]))
@@ -190,6 +199,49 @@ def update_date_range_radio(attr, old, new):
 
 date_range_radio.on_change('active', update_date_range_radio)
 
+price_range_options = [("±2%", "2"), ("±3%", "3")]
+price_range_selected = None
+price_range_dropdown = Dropdown(label="예가범위", menu=price_range_options)
+
+def price_range_dropdown_callback(event):
+    biz_count_min, biz_count_max = biz_count_range_slider.value
+    global fetched_data, price_range_selected
+    price_range_selected = int(event.item)
+    filterd_data = data_module.filter_bidresults(
+        data_list=fetched_data, 
+        date_begin=date_picker_begin.value, 
+        date_end=date_picker_end.value, 
+        price_range=price_range_selected, 
+        biz_count_min=biz_count_min,
+        biz_count_max=biz_count_max)
+    
+    price_range_dropdown.label = f"±{price_range_selected}%"
+    update_barplot(filterd_data)
+    update_lineplot(filterd_data)
+    update_datatable(filterd_data)
+
+price_range_dropdown.on_click(price_range_dropdown_callback)
+
+biz_count_range_slider = RangeSlider(title="참여업체 수", start=0, end=1, step=1, value=(0,1))
+
+def on_change_data_filter_callback(attr, old, new):
+    biz_count_min, biz_count_max = new
+    global fetched_data, price_range_selected
+    filterd_data = data_module.filter_bidresults(
+        data_list=fetched_data, 
+        date_begin=date_picker_begin.value, 
+        date_end=date_picker_end.value, 
+        price_range=price_range_selected, 
+        biz_count_min=biz_count_min,
+        biz_count_max=biz_count_max)
+    
+    price_range_dropdown.label = f"±{price_range_selected}%"
+    update_barplot(filterd_data)
+    update_lineplot(filterd_data)
+    update_datatable(filterd_data)
+
+biz_count_range_slider.on_change("value", on_change_data_filter_callback)
+
 # DataTable 구성
 columns = [
     TableColumn(field="bidNo", title="공고번호", formatter=StringFormatter()),
@@ -202,7 +254,9 @@ columns = [
     TableColumn(field="bidDiff", title="사정율", formatter=NumberFormatter(format="0.0000"), width=150),
     TableColumn(field="priceRange", title="예가범위", formatter=StringFormatter(), width=100),
     TableColumn(field="bidDate", title="공고일자", formatter=DateFormatter(format="%Y-%m-%d")),
+    TableColumn(field="biz_count", title="참여업체", formatter=NumberFormatter()),
 ]
+
 
 table_data = ColumnDataSource(data=dict(bidNo=[], bizName=[], bizOwner=[], bizNo=[], rank=[], bidPrice=[], bidRatio=[], bidDiff=[], priceRange=[], bidDate=[]))
 data_table = DataTable(source=table_data, columns=columns, width=900)
@@ -220,15 +274,25 @@ def update_datatable(data_list):
         'bidDiff': [float(item[8]) for item in data_list],
         'priceRange': [item[9] for item in data_list],
         'bidDate': [pd.to_datetime(item[10]) for item in data_list],
+        'biz_count': [item[11] for item in data_list]
     }
 
-
-biz_options = [line_plot, date_picker_begin, date_picker_end, date_range_radio]
-for item in biz_options:
-    item.visible = False
+def show_biz_search_options(visible):
+    biz_search_options = [line_plot, date_picker_begin, date_picker_end, date_range_radio, price_range_dropdown, biz_count_range_slider]
+    for item in biz_search_options:
+        item.visible = visible
 
 # Layout
-layout = column(search_radio, row(input_field, submit_button), row(date_picker_begin, date_picker_end, date_range_radio), row(bar_plot, line_plot), data_table)
+layout = column(
+    search_radio, 
+    row(input_field, submit_button), 
+    row(bar_plot, line_plot), 
+    row(date_picker_begin, date_picker_end, date_range_radio),
+    row(price_range_dropdown, biz_count_range_slider),
+    data_table)
+
+# initial setting
+show_biz_search_options(False)
 
 # Bokeh 서버에 레이아웃 추가
 curdoc().add_root(layout)

@@ -25,13 +25,14 @@ def fetch_bidresults_by_bid(bid_no):
   Parameters:
   - bid_no(int): 공고번호
   Returns:
-  - (id,공고번호,업체명,대표명,사업자번호,등수,입찰액,투찰율,사정율,예가범위,공고일자)
+  - (id,공고번호,업체명,대표명,사업자번호,순위,입찰액,투찰율,사정율,예가범위,공고일자,참여업체)
   """
   query = """
     SELECT 
         br.*,
         b.pricerange,
-        b.biddate
+        b.biddate,
+        b.biz_count
     FROM 
         bidresults br
     JOIN 
@@ -57,24 +58,21 @@ def fetch_bids_by_bid(bid_no):
   result = execute_query(query, params)
   return result
 
-def fetch_bidresults_by_biz(biz_no, date_begin=None, date_end=None):
+def fetch_bidresults_by_biz(biz_no):
   """
   Parameters:
   - biz_no(int): 사업자번호
   - date_begin(datetime): 필터링할 날짜 구간의 시작일
   - date_end(datetime): 필터링할 날짜 구간의 종료일
   Returns:
-  - (id,공고번호,업체명,대표명,사업자번호,등수,입찰액,투찰율,사정율,예가범위,공고일자)
+  - (id,공고번호,업체명,대표명,사업자번호,순위,입찰액,투찰율,사정율,예가범위,공고일자,참여업체)
   """
-  if not date_begin:
-    date_begin = datetime.datetime.min
-  if not date_end:
-    date_end = datetime.date.today()
   query = """
   SELECT 
       br.*,
       b.pricerange,
-      b.biddate
+      b.biddate,
+      b.biz_count
   FROM 
       bidresults br
   JOIN 
@@ -82,10 +80,24 @@ def fetch_bidresults_by_biz(biz_no, date_begin=None, date_end=None):
   ON 
       br.bidno = b.bidno
   WHERE 
-      br.bizno = %s AND
-      b.biddate >= %s AND
-      b.biddate <= %s;
+      br.bizno = %s
   """
-  params = (biz_no, date_begin, date_end)
+  params = (biz_no,)
   result = execute_query(query, params)
   return result
+
+def filter_bidresults(data_list, date_begin=None, date_end=None, price_range=None, biz_count_min=None, biz_count_max=None):
+  if not data_list:
+    return data_list
+  
+  def apply_filters(data):
+    return (
+            (date_begin is None or data[10] >= date_begin) and
+            (date_end is None or data[10] <= date_end) and
+            (price_range is None or data[9] == price_range) and
+            (biz_count_min is None or data[11] >= biz_count_min) and
+            (biz_count_max is None or data[11] <= biz_count_max)
+        )
+  
+  filtered_list = [data for data in data_list if apply_filters(data)]
+  return filtered_list
