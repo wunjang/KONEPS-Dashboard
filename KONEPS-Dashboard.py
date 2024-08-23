@@ -19,15 +19,19 @@ def search_callback():
     input_value = input_field.value.rstrip()
     if not input_value:
         return
-    
+
     global fetched_data
     selected_option = search_options[search_radio.active]
+    print(f"search: {input_value}, option: {selected_option}")
     if selected_option == "공고번호":
         fetched_data = data_module.fetch_bidresults_by_bid(input_value)
+        price_range_dropdown.menu = list(set((f"±{item[9]}%",f"{item[9]}") for item in fetched_data))
         update_barplot(fetched_data)
+
     elif selected_option == "사업자번호":
         fetched_data = data_module.fetch_bidresults_by_biz(input_value)
-        filtered_data = data_module.filter_bidresults(data_list=fetched_data, date_begin=date_picker_begin.value, date_end=date_picker_end.value, )
+        price_range_dropdown.menu = list(set((f"±{item[9]}%",f"{item[9]}") for item in fetched_data))
+        filtered_data = data_module.filter_bidresults(data_list=fetched_data, date_begin=date_picker_begin.value, date_end=date_picker_end.value)
         update_barplot(filtered_data)
         update_lineplot(filtered_data)
     biz_count_min = min(fetched_data, key=lambda x: x[11])
@@ -43,11 +47,12 @@ def update_lineplot(data_list):
     
 
     sorted_data = sorted(data_list, key=lambda x: x[10])  # 공고일자로 정렬
+
+    
     
     #line_plot.x_range[sorted_data[1]]
 
-    #rank_1_source = ColumnDataSource(sorted_data[sorted_data[5] == 1])
-    #line_plot.circle('bidno', 'biddiff', size=8, source=rank_1_source, color='red', legend_label='Bidrank 1', fill_alpha=0.6, line_color=None)
+    
 
     line_plot.y_range = Range1d(start=0.7, end=1.3)
     line_data.data = {
@@ -61,6 +66,9 @@ def update_lineplot(data_list):
 
     # 새로운 라인 추가
     line_plot.line('bidDate', 'bidDiff', source=line_data, line_width=2, color='blue')
+
+    rank_1_source = [item for item in line_data.data if item['rank'] == 1]
+    line_plot.circle('bidDate', 'bidDiff', size=8, source=rank_1_source, color='red', legend_label='Bidrank 1', fill_alpha=0.6, line_color=None)
 
     
 
@@ -199,9 +207,8 @@ def update_date_range_radio(attr, old, new):
 
 date_range_radio.on_change('active', update_date_range_radio)
 
-price_range_options = [("±2%", "2"), ("±3%", "3")]
 price_range_selected = None
-price_range_dropdown = Dropdown(label="예가범위", menu=price_range_options)
+price_range_dropdown = Dropdown(label="예가범위 선택")
 
 def price_range_dropdown_callback(event):
     biz_count_min, biz_count_max = biz_count_range_slider.value
@@ -215,7 +222,7 @@ def price_range_dropdown_callback(event):
         biz_count_min=biz_count_min,
         biz_count_max=biz_count_max)
     
-    price_range_dropdown.label = f"±{price_range_selected}%"
+    price_range_dropdown.label = f"±{price_range_selected}%" if price_range_selected is not None else "예가범위 선택"
     update_barplot(filterd_data)
     update_lineplot(filterd_data)
     update_datatable(filterd_data)
@@ -224,7 +231,7 @@ price_range_dropdown.on_click(price_range_dropdown_callback)
 
 biz_count_range_slider = RangeSlider(title="참여업체 수", start=0, end=1, step=1, value=(0,1))
 
-def on_change_data_filter_callback(attr, old, new):
+def biz_count_range_callback(attr, old, new):
     biz_count_min, biz_count_max = new
     global fetched_data, price_range_selected
     filterd_data = data_module.filter_bidresults(
@@ -235,17 +242,34 @@ def on_change_data_filter_callback(attr, old, new):
         biz_count_min=biz_count_min,
         biz_count_max=biz_count_max)
     
-    price_range_dropdown.label = f"±{price_range_selected}%"
     update_barplot(filterd_data)
     update_lineplot(filterd_data)
     update_datatable(filterd_data)
 
-biz_count_range_slider.on_change("value", on_change_data_filter_callback)
+def on_change_bidresult_filter():
+    """
+    필터링 위젯 조작 이벤트 콜백
+    """
+    global fetched_data, price_range_selected
+    biz_count_min, biz_count_max = biz_count_range_slider.value
+    filterd_data = data_module.filter_bidresults(
+        data_list=fetched_data, 
+        date_begin=date_picker_begin.value, 
+        date_end=date_picker_end.value, 
+        price_range=price_range_selected, 
+        biz_count_min=biz_count_min,
+        biz_count_max=biz_count_max)
+    
+    update_barplot(filterd_data)
+    update_lineplot(filterd_data)
+    update_datatable(filterd_data)
+
+biz_count_range_slider.on_change("value", biz_count_range_callback)
 
 # DataTable 구성
 columns = [
     TableColumn(field="bidNo", title="공고번호", formatter=StringFormatter()),
-    TableColumn(field="bizName", title="업체명", formatter=StringFormatter()),
+    TableColumn(field="bizName", title="업체명", formatter=StringFormatter(), width=200),
     TableColumn(field="bizOwner", title="대표명", formatter=StringFormatter(), width=100),
     TableColumn(field="bizNo", title="사업자번호", formatter=StringFormatter()),
     TableColumn(field="rank", title="순위", formatter=StringFormatter(), width=50),

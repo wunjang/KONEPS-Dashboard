@@ -92,11 +92,11 @@ def filter_bidresults(data_list, date_begin=None, date_end=None, price_range=Non
   
   def apply_filters(data):
     return (
-            (date_begin is None or data[10] >= date_begin) and
-            (date_end is None or data[10] <= date_end) and
-            (price_range is None or data[9] == price_range) and
-            (biz_count_min is None or data[11] >= biz_count_min) and
-            (biz_count_max is None or data[11] <= biz_count_max)
+            (not isinstance(date_begin, datetime.date) or data[10] >= date_begin) and
+            (not isinstance(date_end, datetime.date) or data[10] <= date_end) and
+            (not isinstance(price_range, int) or data[9] == price_range) and
+            (not isinstance(biz_count_min, int) or data[11] >= biz_count_min) and
+            (not isinstance(biz_count_max, int) or data[11] <= biz_count_max)
         )
   
   filtered_list = [data for data in data_list if apply_filters(data)]
