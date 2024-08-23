@@ -66,9 +66,14 @@ def update_lineplot(data_list):
 
     # 새로운 라인 추가
     line_plot.line('bidDate', 'bidDiff', source=line_data, line_width=2, color='blue')
+    df = pd.DataFrame(line_data.data)
 
-    rank_1_source = [item for item in line_data.data if item['rank'] == 1]
-    line_plot.circle('bidDate', 'bidDiff', size=8, source=rank_1_source, color='red', legend_label='Bidrank 1', fill_alpha=0.6, line_color=None)
+    # rank가 1인 데이터만 필터링
+    filtered_df = df[df['rank'] == 1]
+
+    # 다시 line_data.data에 필터링된 데이터를 할당
+    rank_1_source = ColumnDataSource(data=filtered_df.to_dict(orient='list'))
+    line_plot.scatter('bidDate', 'bidDiff', size=8, source=rank_1_source, color='red', legend_label='1위 입찰', fill_alpha=0.6, line_color=None)
 
     
 
