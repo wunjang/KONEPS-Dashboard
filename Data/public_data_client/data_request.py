@@ -5,34 +5,33 @@ import Data.public_data_client.api_key as api_key
 bids_endpoint = 'http://apis.data.go.kr/1230000/BidPublicInfoService05'
 bidresults_endpoint = 'http://apis.data.go.kr/1230000/ScsbidInfoService01'
 
-def request_api_data(url, params, print_url=True, time_out=60):
+def _request_api_data(url, params, time_out=60):
     params['ServiceKey'] = api_key.get_api_key()
     req = requests.Request('GET', url, params=params)
     prepared = req.prepare()
-    if print_url:
-        print(f"Requested URL: {prepared.url}")
+    logging.debug(f"Requested URL: {prepared.url}")
     
     try:
         response = requests.get(url, params=params, timeout=time_out)
         response.raise_for_status() # 상태 코드가 200이 아닌 경우 예외를 발생시킴
     except requests.exceptions.Timeout:
-        print("Request timed out.")
+        logging.warning("Request timed out.")
         return 'timeout'
     except requests.exceptions.RequestException as e:
-        print(f"Request failed: {e}")
+        logging.warning(f"Request failed: {e}")
         return None
     
     try:
         item = response.json()
     except ValueError:
-        print("Failed to decode JSON.")
+        logging.warning("Failed to decode JSON.")
         return None
     
     if not item:
-        print("No data found in the response.")
+        logging.warning("No data found in the response.")
         return None
     
-    print("Request Succeed.")
+    logging.debug("Request Succeed.")
     return item
 
 def request_bids_by_region_and_industry(region:str, industry:str, date_begin:str, date_end:str, page_no=1):
@@ -55,7 +54,7 @@ def request_bids_by_region_and_industry(region:str, industry:str, date_begin:str
         "prtcptLmtRgnCd": region,
         "indstrytyCd": industry,
     }
-    response = request_api_data(url=url, params=params)
+    response = _request_api_data(url=url, params=params)
 
     if response is None or 'response' not in response or 'body' not in response['response']:
         logging.error('Invalid or empty response from API')
@@ -92,7 +91,7 @@ def request_bid_detail(bid_no):
         "bidNtceNo": bid_no,
         "type": "json"
     }
-    response = request_api_data(url=url, params=params)
+    response = _request_api_data(url=url, params=params)
 
     if response is None or 'response' not in response or 'body' not in response['response']:
         logging.error('Invalid or empty response from API')
@@ -126,16 +125,17 @@ def request_region_restriction(bid_no, bid_ord):
 def request_licence_requirements(bid_no, bid_ord):
     pass
 
-def request_bidresults(bid_no, bid_ord, page_no):
+def request_bidresults(bid_no:str, page_no=1):
+    # TODO. 재입찰 고려
     url = bidresults_endpoint + '/getOpengResultListInfoOpengCompt01'
     num_of_rows = 999
     params = {
         "numOfRows": str(num_of_rows),
-        "pageNo": page_no,
-        "bidNtceNo": bid_ord,
+        "pageNo": str(page_no),
+        "bidNtceNo": bid_no,
         "type": "json"
     }
-    response = request_api_data(url=url, params=params)
+    response = _request_api_data(url=url, params=params)
 
     if response is None or 'response' not in response or 'body' not in response['response']:
         logging.error('Invalid or empty response from API')
@@ -149,7 +149,7 @@ def request_bidresults(bid_no, bid_ord, page_no):
         return None
     
     if total_count > num_of_rows * page_no:
-        next_page_items = request_bidresults(bid_no, bid_ord, page_no + 1)
+        next_page_items = request_bidresults(bid_no, page_no + 1)
         if next_page_items:
             items.extend(next_page_items)
     return items
@@ -164,7 +164,7 @@ def get_plan_price(bid_no:str):
         "bidNtceNo": bid_no,
         "type": "json"
     }
-    response = request_api_data(url=url, params=params)
+    response = _request_api_data(url=url, params=params)
 
     if response is None or 'response' not in response or 'body' not in response['response']:
         logging.error('Invalid or empty response from API')
