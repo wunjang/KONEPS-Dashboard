@@ -10,6 +10,6 @@ def get_api_key():
     if api_key:
         return api_key
     else:
-        ssm = boto3.client('ssm')
+        ssm = boto3.client('ssm', region_name='ap-southeast-2')
         parameter = ssm.get_parameter(Name='/api_key/public_data', WithDecryption=True)
         return parameter['Parameter']['Value']
