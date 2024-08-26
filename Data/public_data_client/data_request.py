@@ -2,6 +2,7 @@ import requests
 import logging
 import Data.public_data_client.api_key as api_key
 
+logger = logging.getLogger('data')
 bids_endpoint = 'http://apis.data.go.kr/1230000/BidPublicInfoService05'
 bidresults_endpoint = 'http://apis.data.go.kr/1230000/ScsbidInfoService01'
 
@@ -9,29 +10,29 @@ def _request_api_data(url, params, time_out=60):
     params['ServiceKey'] = api_key.get_api_key()
     req = requests.Request('GET', url, params=params)
     prepared = req.prepare()
-    logging.debug(f"Requested URL: {prepared.url}")
+    logger.debug(f"Requested URL: {prepared.url}")
     
     try:
         response = requests.get(url, params=params, timeout=time_out)
         response.raise_for_status() # 상태 코드가 200이 아닌 경우 예외를 발생시킴
     except requests.exceptions.Timeout:
-        logging.warning("Request timed out.")
+        logger.warning("Request timed out.")
         return 'timeout'
     except requests.exceptions.RequestException as e:
-        logging.warning(f"Request failed: {e}")
+        logger.warning(f"Request failed: {e}")
         return None
     
     try:
         item = response.json()
     except ValueError:
-        logging.warning("Failed to decode JSON.")
+        logger.warning("Failed to decode JSON.")
         return None
     
     if not item:
-        logging.warning("No data found in the response.")
+        logger.warning("No data found in the response.")
         return None
     
-    logging.debug("Request Succeed.")
+    logger.debug("Request Succeed.")
     return item
 
 def request_bids_by_region_and_industry(region:str, industry:str, date_begin:str, date_end:str, page_no=1):
@@ -57,18 +58,18 @@ def request_bids_by_region_and_industry(region:str, industry:str, date_begin:str
     response = _request_api_data(url=url, params=params)
 
     if response is None or 'response' not in response or 'body' not in response['response']:
-        logging.error('Invalid or empty response from API')
+        logger.error('Invalid or empty response from API')
         return None
 
     total_count = response['response']['body'].get('totalCount', 0)
     items = response['response']['body'].get('items', [])
 
     if total_count == 0 or not items:
-        logging.info('Items not found from request')
+        logger.info('Items not found from request')
         return None
     
     if page_no == 1:
-        logging.info(f"Items count: {total_count}")
+        logger.info(f"Items count: {total_count}")
 
     if total_count > num_of_rows * page_no:
         next_page_items = request_bids_by_region_and_industry(region, industry, date_begin, date_end, page_no + 1)
@@ -94,14 +95,14 @@ def request_bid_detail(bid_no):
     response = _request_api_data(url=url, params=params)
 
     if response is None or 'response' not in response or 'body' not in response['response']:
-        logging.error('Invalid or empty response from API')
+        logger.error('Invalid or empty response from API')
         return None
 
     total_count = response['response']['body'].get('totalCount', 0)
     items = response['response']['body'].get('items', [])
 
     if total_count == 0 or not items:
-        logging.info('Items not found from request')
+        logger.info('Items not found from request')
         return None
     
     item = items[0]
@@ -138,14 +139,14 @@ def request_bidresults(bid_no:str, page_no=1):
     response = _request_api_data(url=url, params=params)
 
     if response is None or 'response' not in response or 'body' not in response['response']:
-        logging.error('Invalid or empty response from API')
+        logger.error('Invalid or empty response from API')
         return None
     
     total_count = response['response']['body'].get('totalCount', 0)
     items = response['response']['body'].get('items', [])
 
     if total_count == 0 or not items:
-        logging.info('Items not found from request')
+        logger.info('Items not found from request')
         return None
     
     if total_count > num_of_rows * page_no:
@@ -167,6 +168,6 @@ def get_plan_price(bid_no:str):
     response = _request_api_data(url=url, params=params)
 
     if response is None or 'response' not in response or 'body' not in response['response']:
-        logging.error('Invalid or empty response from API')
+        logger.error('Invalid or empty response from API')
         return None
     return response['response']['body']['items'][0]['plnprc']

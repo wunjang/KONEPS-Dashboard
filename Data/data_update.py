@@ -1,7 +1,9 @@
 import Data.data as data_module
 import Data.public_data_client.data_request as request_module
 import logging
+import traceback
 
+logger = logging.getLogger('data')
 def update_bids(region:str, industry:str, date_begin:str, date_end:str):
     """
     - region: 지역코드
@@ -16,24 +18,24 @@ def update_bids(region:str, industry:str, date_begin:str, date_end:str):
         try:
             bid_no = bid['bidNtceNo']
             bid_ord = bid['bidNtceOrd']
-            logging.info(f"Processing bid: {bid_no}-{bid_ord}... Progress: {index+1}/{len(bids)}({((index+1)/len(bids))*100:.2f}%)")
+            logger.info(f"Processing bid: {bid_no}-{bid_ord}... Progress: {index+1}/{len(bids)}({((index+1)/len(bids))*100:.2f}%)")
             is_canceled = bid['ntceKindNm'] == '취소'
             if not bid_no.isdigit():
                 # 국방부공고 - 별도 작업으로 분리
-                logging.info(f"bidNo: {bid_no}-{bid_ord} is unusual bid notice and will not be updated in the database.")
+                logger.info(f"bidNo: {bid_no}-{bid_ord} is unusual bid notice and will not be updated in the database.")
                 continue
             elif is_canceled:
                 continue
             
             bid_detail = request_module.request_bid_detail(bid_no)
             if not bid_detail:
-                logging.warning(f"Failed to find bid detail for bid: {bid_no}")
+                logger.warning(f"Failed to find bid detail for bid: {bid_no}")
                 continue
             a_value, base_price, price_range, d_value = bid_detail
 
             plan_price = int(float(request_module.get_plan_price(bid_no)))
             if not plan_price:
-                logging.warning(f"Failed to find plan price for bid: {bid_no}")
+                logger.warning(f"Failed to find plan price for bid: {bid_no}")
                 continue
 
             params_list.append({
@@ -51,9 +53,10 @@ def update_bids(region:str, industry:str, date_begin:str, date_end:str):
                 "bidDate": bid['bidNtceDt']
             })
         except Exception as e:
-            logging.error(f"Update failed by exception: {e}, while processing data: {bid}")
+            logger.error(f"Update failed by exception: {e}, while processing data: {bid}")
+            logger.error(traceback.format_exc())
             continue
-    logging.info(f"{len(params_list)} bid data ready for update.")
+    logger.debug(f"{len(params_list)} bid data ready for update.")
 
     query = """
         INSERT INTO Bids (bidNo, isUsingD, bidMin, basePrice, AVal, industry, bidOrd, planprice, iscanceled, priceRange, DVal, bidDate) 
@@ -75,9 +78,9 @@ def update_bids(region:str, industry:str, date_begin:str, date_end:str):
         """
     result = data_module.update_many(query, params_list)
     if result:
-        logging.info(f"Complete: update_bids().")
+        logger.info(f"Complete: update_bids().")
         for index, bid in enumerate(params_list):
-            logging.info(f"Processing bidresults of bid: {bid['bidNo']}-{bid['bidOrd']}... Progress: {index+1}/{len(params_list)}({((index+1)/len(params_list))*100:.2f}%)")
+            logger.info(f"Processing bidresults of bid: {bid['bidNo']}-{bid['bidOrd']}... Progress: {index+1}/{len(params_list)}({((index+1)/len(params_list))*100:.2f}%)")
             update_bidresults(bid['bidNo'])
 
 def update_bidresults(bid_no):
@@ -96,7 +99,7 @@ def update_bidresults(bid_no):
     
     bid = data_module.fetch_bid_by_bid_no(bid_no)
     for index, bidresult in enumerate(bidresults):
-        logging.info(f"Processing bid: {bid_no}... Progress: {index+1}/{len(bidresults)}({((index+1)/len(bidresults))*100:.2f}%)")
+        logger.debug(f"Processing bidresults of bid: {bid_no}... Progress: {index+1}/{len(bidresults)}({((index+1)/len(bidresults))*100:.2f}%)")
         try:
             bid_price = int(bidresult['bidprcAmt']) or 0
             a_value = int(bid["a_value"])
@@ -113,9 +116,10 @@ def update_bidresults(bid_no):
                 "biddiff": ((bid_price - a_value) / (bid_min / 100) + a_value) / base_price
             })
         except Exception as e:
-            logging.error(f"Update failed by exception: {e}, while processing data: {bidresult}")
+            logger.error(f"Update failed by exception: {e}, while processing data: {bidresult}")
+            logger.error(traceback.format_exc())
             continue
-    logging.info(f"{len(params_list)} bidresult data ready for update.")
+    logger.debug(f"{len(params_list)} bidresult data ready for update.")
 
     query = """
     INSERT INTO bidresults (bidno, bizname, bizowner, bizno, bidrank, bidprice, bidratio, biddiff) 
@@ -124,7 +128,7 @@ def update_bidresults(bid_no):
     """
     result = data_module.update_many(query, params_list)
     if result:
-        logging.info(f"Complete: update_bidresults().")
+        logger.debug(f"Complete: update_bidresults().")
         update_bid_biz_count(bid_no, len(bidresults))
     
 def update_bid_biz_count(bid_no, biz_count):
@@ -139,4 +143,4 @@ def update_bid_biz_count(bid_no, biz_count):
     }
     result = data_module.update_single(query, params)
     if result:
-        logging.info(f"Complete: update_bid_biz_count().")
+        logger.debug(f"Complete: update_bid_biz_count().")

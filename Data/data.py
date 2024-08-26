@@ -3,6 +3,7 @@ import datetime
 import logging
 import traceback
 
+logger = logging.getLogger('data')
 def _execute_query(query, params=None, fetch_results=True, many=False):
   try:
     conn = psycopg2.connect(
@@ -26,8 +27,8 @@ def _execute_query(query, params=None, fetch_results=True, many=False):
         result = True
     return result
   except Exception as e:
-    logging.error(f"An error occurred: {e}")
-    logging.error(traceback.format_exc())
+    logger.error(f"An error occurred: {e}")
+    logger.error(traceback.format_exc())
     return None
   finally:
     if conn:
