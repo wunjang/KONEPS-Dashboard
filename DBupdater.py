@@ -2,6 +2,7 @@ import Data.data as data_module
 import Data.data_update as update_module
 from datetime import date, timedelta, datetime
 import logging
+from logging.handlers import TimedRotatingFileHandler
 import sys
 import argparse
 
@@ -38,7 +39,7 @@ def logging_config(log_level:int, print_console:bool):
     logger.setLevel(log_level)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     
-    file_handler = logging.FileHandler("DBupdater.log")
+    file_handler = TimedRotatingFileHandler("DBupdater.log", when='midnight', interval=1, backupCount=10)
     file_handler.setLevel(log_level)
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
