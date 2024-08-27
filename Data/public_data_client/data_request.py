@@ -102,7 +102,7 @@ def request_bid_detail(bid_no):
     items = response['response']['body'].get('items', [])
 
     if total_count == 0 or not items:
-        logger.info('Items not found from request')
+        logger.warning('Items not found from request')
         return None
     
     item = items[0]
@@ -156,7 +156,7 @@ def request_bidresults(bid_no:str, page_no=1):
     return items
 
 
-def get_plan_price(bid_no:str):
+def request_plan_price(bid_no:str):
     url = bidresults_endpoint + '/getOpengResultListInfoCnstwkPreparPcDetail01'
     params = {
         "numOfRows": '999',
@@ -170,4 +170,13 @@ def get_plan_price(bid_no:str):
     if response is None or 'response' not in response or 'body' not in response['response']:
         logger.error('Invalid or empty response from API')
         return None
-    return response['response']['body']['items'][0]['plnprc']
+    
+    if response['response']['body']['totalCount'] == 0:
+        logger.info(f'Bid:{bid_no} has no plan price. Check if bid has not opened.')
+        return 'NO_DATA'
+    
+    result = response['response']['body']['items'][0]['plnprc']
+    if result is None:
+        logger.error(f'Invalid plan price value: {result}')
+        return None
+    return result

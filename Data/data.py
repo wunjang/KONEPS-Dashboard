@@ -82,6 +82,25 @@ def fetch_bid_by_bid_no(bid_no):
   names = ["bid_no", "is_using_d_value", "bid_min", "base_price", "a_value", "industry", "bid_ord", "is_canceled", "price_range", "d_value", "bid_date", "biz_count"]
   return tuple_to_dict(names, result[0])
 
+def fetch_bid_no_list(bid_no_min, bid_no_max):
+  """
+  중복 체크를 위해 bid_no 값만 반환
+  """
+  query = """
+  SELECT b.bidno FROM bids b WHERE b.bidno >= %s AND b.bidno <= %s
+  """
+  params = (bid_no_min, bid_no_max)
+  result = fetch_single(query, params)
+  return result
+
+def fetch_bids_without_results():
+  query = """
+  SELECT b.bidno FROM bids b WHERE (b.biz_count = 0 OR b.biz_count IS NULL) AND b.iscanceled = False
+  """
+  params = ()
+  result = fetch_single(query, params)
+  return result
+
 def fetch_bidresults_by_biz(biz_no):
   """
   Parameters:

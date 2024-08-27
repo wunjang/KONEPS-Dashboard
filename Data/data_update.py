@@ -4,7 +4,7 @@ import logging
 import traceback
 
 logger = logging.getLogger('data')
-def update_bids(region:str, industry:str, date_begin:str, date_end:str):
+def update_bids(region:str, industry:str, date_begin:str, date_end:str, reprocess:bool):
     """
     - region: 지역코드
     - industry: 업종코드
@@ -14,6 +14,11 @@ def update_bids(region:str, industry:str, date_begin:str, date_end:str):
     bids = request_module.request_bids_by_region_and_industry(region, industry, date_begin, date_end)
     if not bids:
         return
+
+    if reprocess is False:
+        check_list = data_module.fetch_bid_no_list(bids[0]['bidNtceNo'], bids[len(bids)-1]['bidNtceNo'])
+        bids = [bid for bid in bids if bid['bidNtceNo'] not in check_list]
+
     for index, bid in enumerate(bids):
         try:
             bid_no = bid['bidNtceNo']
@@ -33,10 +38,14 @@ def update_bids(region:str, industry:str, date_begin:str, date_end:str):
                 continue
             a_value, base_price, price_range, d_value = bid_detail
 
-            plan_price = int(float(request_module.get_plan_price(bid_no)))
-            if not plan_price:
+            plan_price = request_module.request_plan_price(bid_no)
+            if plan_price == 'NO_DATA':
+                continue
+            elif not plan_price:
                 logger.warning(f"Failed to find plan price for bid: {bid_no}")
                 continue
+            else:
+                plan_price = int(float(plan_price))
 
             params_list.append({
                 "bidNo": bid['bidNtceNo'],
@@ -81,9 +90,9 @@ def update_bids(region:str, industry:str, date_begin:str, date_end:str):
         logger.info(f"Complete: update_bids().")
         for index, bid in enumerate(params_list):
             logger.info(f"Processing bidresults of bid: {bid['bidNo']}-{bid['bidOrd']}... Progress: {index+1}/{len(params_list)}({((index+1)/len(params_list))*100:.2f}%)")
-            update_bidresults(bid['bidNo'])
+            update_bidresults(bid['bidNo'], reprocess)
 
-def update_bidresults(bid_no):
+def update_bidresults(bid_no, reprocess:bool):
     params_list = []
     bidresults = request_module.request_bidresults(bid_no)
     if not bidresults:
@@ -101,7 +110,7 @@ def update_bidresults(bid_no):
     for index, bidresult in enumerate(bidresults):
         logger.debug(f"Processing bidresults of bid: {bid_no}... Progress: {index+1}/{len(bidresults)}({((index+1)/len(bidresults))*100:.2f}%)")
         try:
-            bid_price = int(bidresult['bidprcAmt']) or 0
+            bid_price = int(bidresult['bidprcAmt'] or 0)
             a_value = int(bid["a_value"])
             bid_min = float(bid["bid_min"])
             base_price = int(bid["base_price"])
@@ -144,3 +153,14 @@ def update_bid_biz_count(bid_no, biz_count):
     result = data_module.update_single(query, params)
     if result:
         logger.debug(f"Complete: update_bid_biz_count().")
+
+def update_finished_bid(reprocess):
+    """
+    개찰이 완료되었으나 결과가 업데이트 되지 않은 입찰을 확인하고 업데이트한다
+    """
+    bids = data_module.fetch_bids_without_results()
+    if not bids:
+        return
+    for index, bid in enumerate(bids):
+        logger.info(f"Processing finished bid: {bid[0]}... Progress: {index+1}/{len(bids)}({((index+1)/len(bids))*100:.2f}%)")
+        update_bidresults(bid[0], reprocess)
