@@ -1,5 +1,6 @@
 import psycopg2
 import datetime
+from datetime import datetime, date
 import logging
 import traceback
 
@@ -67,6 +68,7 @@ def fetch_bidresults_by_bid(bid_no):
     """
   params = (bid_no,)
   result = fetch_single(query, params)
+  names = ['id','bid_no','biz_name','biz_owner','biz_no','rank','bid_price','bid_ratio','bid_diff','price_range','bid_date','biz_count']
   return result
 
 def fetch_bid_by_bid_no(bid_no):
@@ -94,6 +96,9 @@ def fetch_bid_no_list(bid_no_min, bid_no_max):
   return result
 
 def fetch_bids_without_results():
+  """
+  개찰 결과가 업데이트 되지 않은 공고들만 체크
+  """
   query = """
   SELECT b.bidno FROM bids b WHERE (b.biz_count = 0 OR b.biz_count IS NULL) AND b.iscanceled = False
   """
@@ -133,10 +138,19 @@ def filter_bidresults(data_list, date_begin=None, date_end=None, price_range=Non
   if not data_list:
     return data_list
   
+  if date_begin and date_end:
+    try:
+      date_begin = datetime.strptime(date_begin, '%Y-%m-%d').date()
+      date_end = datetime.strptime(date_end, '%Y-%m-%d').date()
+    except ValueError as e:
+      #TODO. 여기서 ValueError가 나기는 아주 쉬울 것 같다... popup을 띄운다거나 해서 유저에게 알려야 함
+      date_begin = None
+      date_end = None
+  
   def apply_filters(data):
     return (
-            (not isinstance(date_begin, datetime.date) or data[10] >= date_begin) and
-            (not isinstance(date_end, datetime.date) or data[10] <= date_end) and
+            (not isinstance(date_begin, date) or data[10] >= date_begin) and
+            (not isinstance(date_end, date) or data[10] <= date_end) and
             (not isinstance(price_range, int) or data[9] == price_range) and
             (not isinstance(biz_count_min, int) or data[11] >= biz_count_min) and
             (not isinstance(biz_count_max, int) or data[11] <= biz_count_max)
