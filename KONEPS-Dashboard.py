@@ -16,7 +16,7 @@ from dateutil.relativedelta import relativedelta
 
 fetched_data = None
 def search_callback():
-    input_value = search_input_field.value.rstrip()
+    input_value = search_input.value.rstrip()
     if not input_value:
         return
 
@@ -145,14 +145,32 @@ def update_barplot(data_list):
     )
 
 # Bokeh 레이아웃 구성 요소
-search_input_field = TextInput(value="")
-search_input_field.on_event('value_submit', search_callback)
+search_options = ["공고번호", "사업자번호"]
+search_radio = RadioButtonGroup(labels=search_options, active = 1)
+
+search_input = TextInput(value="")
+search_input.on_event('value_submit', search_callback)
 
 search_button = Button(label="검색", button_type="success")
 search_button.on_click(search_callback)
 
-search_options = ["공고번호", "사업자번호"]
-search_radio = RadioButtonGroup(labels=search_options, active = 1)
+make_search_url_callback = CustomJS(args=dict(
+    search_radio=search_radio,
+    search_input=search_input),
+    code="""
+    if (!search_input.value || search_input.value.trim() === "") {
+        return;
+    }
+
+    var url = new URL(window.location);
+    url.searchParams.set('search_option', search_radio.active);
+    url.searchParams.set('search_input', search_input.value);
+
+    window.history.pushState({}, '', url);
+    """)
+
+search_button.js_on_click(make_search_url_callback)
+search_input.js_on_event('value_submit', make_search_url_callback)
 
 search_alert_paragraph = Paragraph(text="데이터가 없습니다.")
 search_alert_paragraph.visible = False
@@ -235,7 +253,7 @@ def update_date_range_radio(attr, old, new):
 
 date_range_radio.on_change('active', update_date_range_radio)
 
-price_range_selected = None
+price_range_selected = 0
 price_range_options = ["예가 범위",]
 price_range_radio = RadioButtonGroup(labels=price_range_options, active=0)
 
@@ -265,8 +283,9 @@ def price_range_radio_callback(attr, old, new):
     if price_range_options[new].isdigit():
         price_range_selected = int(price_range_options[new])
     else:
-        price_range_selected = None
+        price_range_selected = 0
     apply_bidresult_filter()
+    print(f'price_range:{price_range_selected}')
 
 
 price_range_radio.on_change('active', price_range_radio_callback)
@@ -276,7 +295,7 @@ def reset_bidresult_filter():
     global price_range_selected
     biz_count_range_slider.value = (biz_count_range_slider.start, biz_count_range_slider.end)
     price_range_radio.active = 0
-    price_range_selected = None
+    price_range_selected = 0
     date_picker_begin.value = None
     date_picker_end.value = None
     date_range_radio.active = 0
@@ -309,18 +328,6 @@ columns = [
 table_data = ColumnDataSource(data=dict(bidNo=[], bizName=[], bizOwner=[], bizNo=[], rank=[], bidPrice=[], bidRatio=[], bidDiff=[], priceRange=[], bidDate=[]))
 data_table = DataTable(source=table_data, columns=columns, width=900, height=900)
 
-# 우클릭 시 정보를 표시할 Div 생성
-output = Div(text="hmm...", width=400, height=100)
-
-# CustomJS 콜백
-callback = CustomJS(args=dict(source=table_data, output_div=output), code="""
-    console.log(source.selected.indices)
-    output.text = source.selected.indices
-""")
-
-# DataTable과 콜백 연결
-table_data.selected.js_on_change('indices', callback)
-
 def update_datatable(data_list):
     # Update data table
     table_data.data = {
@@ -342,14 +349,76 @@ def show_biz_search_options(visible):
     for item in biz_search_options:
         item.visible = visible
 
+# make url parameters
+make_bizsearch_url_callback = CustomJS(args=dict(
+    search_radio=search_radio,
+    search_input=search_input,
+    bin_count_slider=bin_count_slider,
+    date_picker_begin=date_picker_begin,
+    date_picker_end=date_picker_end,
+    price_range_radio=price_range_radio,
+    biz_count_range_slider=biz_count_range_slider),
+    code="""
+    if (!search_input.value || search_input.value.trim() === "") {
+        return;
+    }
+
+    var url = new URL(window.location);
+    url.searchParams.set('search_option', search_radio.active);
+    url.searchParams.set('search_input', search_input.value);
+    url.searchParams.set('bin_count', bin_count_slider.value);
+    if (date_picker_begin.value) {
+        url.searchParams.set('date_begin', date_picker_begin.value);
+    }
+    if (date_picker_end.value) {
+        url.searchParams.set('date_end', date_picker_end.value);
+    }
+    url.searchParams.set('price_range', price_range_radio.active);
+    url.searchParams.set('biz_count_min', biz_count_range_slider.value[0]);
+    url.searchParams.set('biz_count_max', biz_count_range_slider.value[1]);
+
+    window.history.pushState({}, '', url);
+    """)
+apply_filter_button.js_on_click(make_bizsearch_url_callback)
+
+# reflect url parameters
+params = curdoc().session_context.request.arguments
+def reflect_url(params):
+    # main options
+    if 'search_option' in params:
+        search_radio.active = int(params['search_option'][0])
+    else:
+        return
+    if 'search_input' in params:
+        search_input.value = params['search_input'][0].decode('utf-8')
+        search_callback()
+    else:
+        return
+    
+    # bidresults filters
+    if 'bin_count' in params:
+        bin_count_slider.value = int(params['bin_count'][0])
+    if 'date_begin' in params:
+        date_picker_begin.value = params['date_begin'][0].decode('utf-8')
+    if 'date_end' in params:
+        date_picker_end.value = params['date_end'][0].decode('utf-8')
+    if 'price_range' in params:
+        price_range_radio.active = int(params['price_range'][0])
+    if 'biz_count_min' in params and 'biz_count_max' in params:
+        biz_count_range_slider.value = (
+            int(params['biz_count_min'][0]), 
+            int(params['biz_count_max'][0])
+        )
+reflect_url(params)    
+
+
 # Layout
 layout = column(
     search_radio, 
-    row(search_input_field, search_button, search_alert_paragraph), 
+    row(search_input, search_button, search_alert_paragraph), 
     row(column(bar_plot, bin_count_slider), line_plot), 
     row(date_picker_begin, date_picker_end, date_range_radio, apply_filter_button, reset_filter_button),
     row(price_range_radio, biz_count_range_slider),
-    output,
     data_table)
 
 # initial setting
