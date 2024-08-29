@@ -413,6 +413,7 @@ apply_filter_button.js_on_click(make_bizsearch_url_callback)
 # reflect url parameters
 params = curdoc().session_context.request.arguments
 def reflect_url(params):
+    print(params)
     # main options
     if 'search_option' in params:
         search_radio.active = int(params['search_option'][0])
