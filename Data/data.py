@@ -44,12 +44,12 @@ def update_many(query, params_list=None):
 def fetch_single(query, params=None):
   return _execute_query(query, params, many=False, fetch_results=True)
   
-def fetch_bidresults_by_bid(bid_no):
+def fetch_bidresults_by_bid_no(bid_no):
   """
   Parameters:
-  - bid_no(int): 공고번호
+    bid_no(int): 공고번호
   Returns:
-  - (id,공고번호,업체명,대표명,사업자번호,순위,입찰액,투찰율,사정율,예가범위,공고일자,참여업체)
+    (id,공고번호,업체명,대표명,사업자번호,순위,입찰액,투찰율,사정율,예가범위,공고일자,참여업체)
   """
   query = """
     SELECT 
@@ -73,14 +73,16 @@ def fetch_bidresults_by_bid(bid_no):
 
 def fetch_bid_by_bid_no(bid_no):
   """
-  Parameters:
-  - bid_no(int): 공고번호
+  Params:
+    bid_no(int): 공고번호
   Returns:
-  - (공고번호,순공사원가사용여부,입찰하한가,기초가격,A값,자격요건,공고차수,취소여부,예가범위,순공사원가액수,공고일자,참여업체)
+    (공고번호,순공사원가사용여부,입찰하한가,기초가격,A값,자격요건,공고차수,취소여부,예가범위,순공사원가액수,공고일자,참여업체)
   """
   query = "SELECT * FROM bids WHERE bidno = %s"
   params = (bid_no,)
   result = fetch_single(query, params)
+  if not result:
+    return None
   names = ["bid_no", "is_using_d_value", "bid_min", "base_price", "a_value", "industry", "bid_ord", "is_canceled", "price_range", "d_value", "bid_date", "biz_count"]
   return tuple_to_dict(names, result[0])
 
@@ -108,12 +110,12 @@ def fetch_bids_without_results():
 
 def fetch_bidresults_by_biz(biz_no):
   """
-  Parameters:
-  - biz_no(int): 사업자번호
-  - date_begin(datetime): 필터링할 날짜 구간의 시작일
-  - date_end(datetime): 필터링할 날짜 구간의 종료일
+  Params:
+    biz_no(int): 사업자번호
+    date_begin(datetime): 필터링할 날짜 구간의 시작일
+    date_end(datetime): 필터링할 날짜 구간의 종료일
   Returns:
-  - (id,공고번호,업체명,대표명,사업자번호,순위,입찰액,투찰율,사정율,예가범위,공고일자,참여업체)
+    (id,공고번호,업체명,대표명,사업자번호,순위,입찰액,투찰율,사정율,예가범위,공고일자,참여업체)
   """
   query = """
   SELECT 

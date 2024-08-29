@@ -48,13 +48,13 @@ def update_bids(region:str, industry:str, date_begin:str, date_end:str, reproces
                 plan_price = int(float(plan_price))
 
             params_list.append({
-                "bidNo": bid['bidNtceNo'],
+                "bidNo": bid_no,
                 "isUsingD": d_value != 0,
                 "bidMin": bid['sucsfbidLwltRate'] or 0,
                 "basePrice": base_price,
                 "AVal": a_value,
                 "industry": "-", #별개 테이블로 분리 예정
-                "bidOrd": bid['bidNtceOrd'],
+                "bidOrd": bid_ord,
                 "planprice": plan_price,
                 "iscanceled": is_canceled,
                 "priceRange": price_range,
@@ -91,6 +91,83 @@ def update_bids(region:str, industry:str, date_begin:str, date_end:str, reproces
         for index, bid in enumerate(params_list):
             logger.info(f"Processing bidresults of bid: {bid['bidNo']}-{bid['bidOrd']}... Progress: {index+1}/{len(params_list)}({((index+1)/len(params_list))*100:.2f}%)")
             update_bidresults(bid['bidNo'], reprocess)
+
+def update_bid(bid_no, reprocess:bool):
+    """
+    Todo:
+        update_bids()랑 코드가 많이 겹치는데 좀 줄여보자
+    """
+    bid = request_module.request_bid_by_bid_no(bid_no)
+    if not bid:
+        return
+    try:
+        bid_no = bid['bidNtceNo']
+        bid_ord = bid['bidNtceOrd']
+        logger.info(f"Processing single bid: {bid_no}-{bid_ord}...")
+        is_canceled = bid['ntceKindNm'] == '취소'
+        if not bid_no.isdigit():
+            # 국방부공고 - 별도 작업으로 분리
+            logger.info(f"bidNo: {bid_no}-{bid_ord} is unusual bid notice and will not be updated in the database.")
+            return
+        elif is_canceled:
+            return
+        
+        bid_detail = request_module.request_bid_detail(bid_no)
+        if not bid_detail:
+            logger.warning(f"Failed to find bid detail for bid: {bid_no}")
+            return
+        a_value, base_price, price_range, d_value = bid_detail
+
+        plan_price = request_module.request_plan_price(bid_no)
+        if plan_price == 'NO_DATA':
+            return
+        elif not plan_price:
+            logger.warning(f"Failed to find plan price for bid: {bid_no}")
+            return
+        else:
+            plan_price = int(float(plan_price))
+
+        params = {
+            "bidNo": bid_no,
+            "isUsingD": d_value != 0,
+            "bidMin": bid['sucsfbidLwltRate'] or 0,
+            "basePrice": base_price,
+            "AVal": a_value,
+            "industry": "-", #별개 테이블로 분리 예정
+            "bidOrd": bid_ord,
+            "planprice": plan_price,
+            "iscanceled": is_canceled,
+            "priceRange": price_range,
+            "DVal": d_value,
+            "bidDate": bid['bidNtceDt']
+        }
+    except Exception as e:
+        logger.error(f"Update failed by exception: {e}, while processing data: {bid}")
+        logger.error(traceback.format_exc())
+        return
+    
+    query = """
+        INSERT INTO Bids (bidNo, isUsingD, bidMin, basePrice, AVal, industry, bidOrd, planprice, iscanceled, priceRange, DVal, bidDate) 
+        VALUES (%(bidNo)s, %(isUsingD)s, %(bidMin)s, %(basePrice)s, %(AVal)s, %(industry)s, %(bidOrd)s, %(planprice)s, %(iscanceled)s, %(priceRange)s, %(DVal)s, TO_TIMESTAMP(%(bidDate)s, 'YYYY-MM-DD HH24:MI:SS'))
+        ON CONFLICT (bidNo)
+        DO UPDATE SET
+            isUsingD = EXCLUDED.isUsingD,
+            bidMin = EXCLUDED.bidMin,
+            basePrice = EXCLUDED.basePrice,
+            AVal = EXCLUDED.AVal,
+            industry = EXCLUDED.industry,
+            bidOrd = EXCLUDED.bidOrd,
+            planprice = EXCLUDED.planprice,
+            iscanceled = EXCLUDED.iscanceled,
+            priceRange = EXCLUDED.priceRange,
+            DVal = EXCLUDED.DVal,
+            bidDate = EXCLUDED.bidDate
+        WHERE Bids.bidOrd < EXCLUDED.bidOrd
+        """
+    result = data_module.update_single(query, params)
+    if result:
+        update_bidresults(bid_no, reprocess)
+            
 
 def update_bidresults(bid_no, reprocess:bool):
     params_list = []

@@ -1,4 +1,5 @@
 import Data.data as data_module
+import Data.data_update as update_module
 import pandas as pd
 from bokeh.plotting import figure
 from bokeh.io import curdoc
@@ -13,8 +14,18 @@ from bokeh.layouts import column, row
 import numpy as np
 import datetime
 from dateutil.relativedelta import relativedelta
+from urllib.parse import urlparse
 
 fetched_data = None
+
+def fetch_or_request_bid_by_bid_no(bid_no):
+    bid = data_module.fetch_bidresults_by_bid_no(bid_no)
+    if not bid:
+        curdoc().add_next_tick_callback(lambda: None)
+        update_module.update_bid(bid_no, False)
+        bid = data_module.fetch_bidresults_by_bid_no(bid_no)
+    return bid
+
 def search_callback():
     input_value = search_input.value.rstrip()
     if not input_value:
@@ -24,12 +35,12 @@ def search_callback():
     selected_option = search_options[search_radio.active]
     print(f"search: {input_value}, option: {selected_option}")
     if selected_option == "공고번호":
-        fetched_data = data_module.fetch_bidresults_by_bid(input_value)
+        fetched_data = fetch_or_request_bid_by_bid_no(input_value)
         if not fetched_data:
-            search_alert_paragraph.visible = True
+            search_alert_paragraph.text = "데이터가 없습니다"
             return
         else:
-            search_alert_paragraph.visible = False
+            search_alert_paragraph.text = "검색 완료"
 
         update_barplot(fetched_data)
         update_datatable(fetched_data)
@@ -37,10 +48,10 @@ def search_callback():
     elif selected_option == "사업자번호":
         fetched_data = data_module.fetch_bidresults_by_biz(input_value)
         if not fetched_data:
-            search_alert_paragraph.visible = True
+            search_alert_paragraph.text = "데이터가 없습니다"
             return
         else:
-            search_alert_paragraph.visible = False
+            search_alert_paragraph.text = "검색 완료"
 
         update_barplot(fetched_data)
         update_lineplot(fetched_data)
@@ -172,8 +183,7 @@ make_search_url_callback = CustomJS(args=dict(
 search_button.js_on_click(make_search_url_callback)
 search_input.js_on_event('value_submit', make_search_url_callback)
 
-search_alert_paragraph = Paragraph(text="데이터가 없습니다.")
-search_alert_paragraph.visible = False
+search_alert_paragraph = Paragraph(text="")
 
 def update_search_radio(attr, old, new):
     if new == 0:
@@ -314,7 +324,15 @@ apply_filter_button.on_click(apply_bidresult_filter)
 
 reset_filter_button = Button(label='초기화', button_type='warning')
 reset_filter_button.on_click(reset_bidresult_filter)
-base_url = "http://localhost:5006/KONEPS-Dashboard"
+
+base_url = ""
+def extract_base_url():
+    global base_url
+    request = curdoc().session_context.request
+    full_url = f"{request.protocol}://{request.host}{request.uri}"
+    parsed_url = urlparse(full_url)
+    base_url = f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}"
+
 # DataTable 구성
 bid_no_search_formatter = HTMLTemplateFormatter(template=f"""
     <a href="{base_url}?search_option=0&search_input=<%= value %>" target="_blank"><%= value %></a>
@@ -437,7 +455,8 @@ layout = column(
 
 # initial setting
 show_biz_search_options(True)
-reflect_url(params)   
+reflect_url(params)
+extract_base_url()
 
 # Bokeh 서버에 레이아웃 추가
 curdoc().add_root(layout)

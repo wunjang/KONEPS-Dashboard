@@ -37,10 +37,13 @@ def _request_api_data(url, params, time_out=60):
 
 def request_bids_by_region_and_industry(region:str, industry:str, date_begin:str, date_end:str, page_no=1):
     """
-    - region: 지역코드
-    - industry: 업종코드
-    - date_begin, date_end: 'yyyyMMddhhmm'형식의 문자열
-    - page_no: 재귀 호출을 위한 패러미터. 변경 하지 말 것
+    Params:
+        region: 지역코드
+        industry: 업종코드
+        date_begin,date_end: 'yyyyMMddhhmm'형식의 문자열
+        page_no: 재귀 호출을 위한 패러미터. 변경 하지 말 것
+    returns:
+        참조: https://www.data.go.kr/tcs/dss/selectApiDataDetailView.do?publicDataPk=15000802#/API%20%EB%AA%A9%EB%A1%9D/getBidPblancListInfoCnstwkPPSSrch02
     """
     url = bids_endpoint + '/getBidPblancListInfoCnstwkPPSSrch02'
 
@@ -77,10 +80,39 @@ def request_bids_by_region_and_industry(region:str, industry:str, date_begin:str
             items.extend(next_page_items)
     return items
 
+def request_bid_by_bid_no(bid_no):
+    """
+    참조: https://www.data.go.kr/tcs/dss/selectApiDataDetailView.do?publicDataPk=15000802#/API%20%EB%AA%A9%EB%A1%9D/getBidPblancListInfoCnstwk02
+    """
+    url = url = bids_endpoint + '/getBidPblancListInfoCnstwk02'
+
+    num_of_rows = 999
+    params = {
+        "numOfRows": str(num_of_rows),
+        "pageNo": '1',
+        "inqryDiv": '2',
+        "bidNtceNo": bid_no,
+        "type": "json"
+    }
+    response = _request_api_data(url=url, params=params)
+
+    if response is None or 'response' not in response or 'body' not in response['response']:
+        logger.error('Invalid or empty response from API')
+        return None
+    
+    total_count = response['response']['body'].get('totalCount', 0)
+    item = response['response']['body'].get('items', [])
+
+    if total_count == 0 or not item:
+        logger.warning('Items not found from request')
+        return None
+    
+    return item[0]
+
 def request_bid_detail(bid_no):
     """
-    Returns: 
-    - a값, 기초가격, 예가범위, 순공사원가
+    Return: 
+    - (a값, 기초가격, 예가범위, 순공사원가)
     """
     url = bids_endpoint + '/getBidPblancListInfoCnstwkBsisAmount02'
 
