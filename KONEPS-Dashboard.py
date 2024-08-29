@@ -6,7 +6,7 @@ from bokeh.models import (
     ColumnDataSource, HoverTool, LinearColorMapper, DataRange1d,
     TextInput, Button, DataTable, TableColumn, Div,
     NumberFormatter, StringFormatter, DateFormatter, RadioButtonGroup, Range1d,
-    DatePicker, Dropdown, Slider, RangeSlider, Paragraph, CustomJS
+    DatePicker, Dropdown, Slider, RangeSlider, Paragraph, CustomJS, HTMLTemplateFormatter
 )
 from bokeh.models.tools import WheelZoomTool, BoxZoomTool, ResetTool, PanTool
 from bokeh.layouts import column, row
@@ -232,6 +232,12 @@ wheel_zoom = WheelZoomTool()
 #bar_plot.toolbar.active_scroll.axis = 'x'
 
 bin_count_slider = Slider(title="구간 갯수", start=1, end=120, value = 60, width=bar_plot.width)
+def bin_count_callback(attr, old, new):
+    if search_radio.active == 0:
+        update_barplot(fetched_data)
+    elif search_radio.active == 1:
+        apply_bidresult_filter()
+bin_count_slider.on_change('value_throttled', bin_count_callback)
 
 date_picker_begin = DatePicker(title="시작일")
 date_picker_end = DatePicker(title="종료일")
@@ -253,7 +259,7 @@ def update_date_range_radio(attr, old, new):
 
 date_range_radio.on_change('active', update_date_range_radio)
 
-price_range_selected = 0
+price_range_selected = None
 price_range_options = ["예가 범위",]
 price_range_radio = RadioButtonGroup(labels=price_range_options, active=0)
 
@@ -283,19 +289,18 @@ def price_range_radio_callback(attr, old, new):
     if price_range_options[new].isdigit():
         price_range_selected = int(price_range_options[new])
     else:
-        price_range_selected = 0
+        price_range_selected = None
     apply_bidresult_filter()
     print(f'price_range:{price_range_selected}')
 
 
 price_range_radio.on_change('active', price_range_radio_callback)
-bin_count_slider.on_change('value_throttled', apply_bidresult_filter_callback)
 
 def reset_bidresult_filter():
     global price_range_selected
     biz_count_range_slider.value = (biz_count_range_slider.start, biz_count_range_slider.end)
     price_range_radio.active = 0
-    price_range_selected = 0
+    price_range_selected = None
     date_picker_begin.value = None
     date_picker_end.value = None
     date_range_radio.active = 0
@@ -309,13 +314,19 @@ apply_filter_button.on_click(apply_bidresult_filter)
 
 reset_filter_button = Button(label='초기화', button_type='warning')
 reset_filter_button.on_click(reset_bidresult_filter)
-
+base_url = "http://localhost:5006/KONEPS-Dashboard"
 # DataTable 구성
+bid_no_search_formatter = HTMLTemplateFormatter(template=f"""
+    <a href="{base_url}?search_option=0&search_input=<%= value %>" target="_blank"><%= value %></a>
+""")
+biz_no_search_formatter = HTMLTemplateFormatter(template=f"""
+    <a href="{base_url}?search_option=1&search_input=<%= value %>" target="_blank"><%= value %></a>
+""")
 columns = [
-    TableColumn(field="bidNo", title="공고번호", formatter=StringFormatter()),
+    TableColumn(field="bidNo", title="공고번호", formatter=bid_no_search_formatter),
     TableColumn(field="bizName", title="업체명", formatter=StringFormatter(), width=200),
     TableColumn(field="bizOwner", title="대표명", formatter=StringFormatter(), width=100),
-    TableColumn(field="bizNo", title="사업자번호", formatter=StringFormatter()),
+    TableColumn(field="bizNo", title="사업자번호", formatter=biz_no_search_formatter),
     TableColumn(field="rank", title="순위", formatter=StringFormatter(), width=50),
     TableColumn(field="bidPrice", title="입찰액(원)", formatter=NumberFormatter(format="0,0")),
     TableColumn(field="bidRatio", title="투찰율", formatter=NumberFormatter(format="0.000"), width=150),
@@ -387,6 +398,10 @@ def reflect_url(params):
     # main options
     if 'search_option' in params:
         search_radio.active = int(params['search_option'][0])
+        if search_radio.active == 0:
+            show_biz_search_options(False)
+        elif search_radio.active == 1:
+            show_biz_search_options(True)
     else:
         return
     if 'search_input' in params:
@@ -408,8 +423,7 @@ def reflect_url(params):
         biz_count_range_slider.value = (
             int(params['biz_count_min'][0]), 
             int(params['biz_count_max'][0])
-        )
-reflect_url(params)    
+        ) 
 
 
 # Layout
@@ -423,6 +437,7 @@ layout = column(
 
 # initial setting
 show_biz_search_options(True)
+reflect_url(params)   
 
 # Bokeh 서버에 레이아웃 추가
 curdoc().add_root(layout)
