@@ -6,9 +6,10 @@ import traceback
 logger = logging.getLogger('data')
 def update_bids(region:str, industry:str, date_begin:str, date_end:str, reprocess:bool):
     """
-    - region: 지역코드
-    - industry: 업종코드
-    - date_begin, date_end: 검색할 공고일자 구간. 'yyyyMMddhhmm'형식
+    Params:
+        region: 지역코드
+        industry: 업종코드
+        date_begin,date_end: 검색할 공고일자 구간. 'yyyyMMddhhmm'형식
     """
     params_list = []
     bids = request_module.request_bids_by_region_and_industry(region, industry, date_begin, date_end)
@@ -40,7 +41,7 @@ def update_bids(region:str, industry:str, date_begin:str, date_end:str, reproces
 
             plan_price = request_module.request_plan_price(bid_no)
             if plan_price == 'NO_DATA':
-                continue
+                plan_price = None
             elif not plan_price:
                 logger.warning(f"Failed to find plan price for bid: {bid_no}")
                 continue
@@ -89,8 +90,10 @@ def update_bids(region:str, industry:str, date_begin:str, date_end:str, reproces
     if result:
         logger.info(f"Complete: update_bids().")
         for index, bid in enumerate(params_list):
-            logger.info(f"Processing bidresults of bid: {bid['bidNo']}-{bid['bidOrd']}... Progress: {index+1}/{len(params_list)}({((index+1)/len(params_list))*100:.2f}%)")
+            logger.info(f"Processing additional data of bid: {bid['bidNo']}-{bid['bidOrd']}... Progress: {index+1}/{len(params_list)}({((index+1)/len(params_list))*100:.2f}%)")
             update_bidresults(bid['bidNo'], reprocess)
+            update_bid_license_restriction(bid['bidNo'], bid['bidOrd'])
+            update_bid_region_restrictions(bid['bidNo'], bid['bidOrd'])
 
 def update_bid(bid_no, reprocess:bool):
     """
@@ -120,7 +123,7 @@ def update_bid(bid_no, reprocess:bool):
 
         plan_price = request_module.request_plan_price(bid_no)
         if plan_price == 'NO_DATA':
-            return
+            plan_price = None
         elif not plan_price:
             logger.warning(f"Failed to find plan price for bid: {bid_no}")
             return
@@ -166,7 +169,10 @@ def update_bid(bid_no, reprocess:bool):
         """
     result = data_module.update_single(query, params)
     if result:
+        logger.info(f"Complete: update_bid().")
         update_bidresults(bid_no, reprocess)
+        update_bid_license_restriction(bid_no, bid_ord)
+        update_bid_region_restrictions(bid_no, bid_ord)
             
 
 def update_bidresults(bid_no, reprocess:bool):
@@ -208,9 +214,9 @@ def update_bidresults(bid_no, reprocess:bool):
     logger.debug(f"{len(params_list)} bidresult data ready for update.")
 
     query = """
-    INSERT INTO bidresults (bidno, bizname, bizowner, bizno, bidrank, bidprice, bidratio, biddiff) 
-    VALUES (%(bidno)s, %(bizname)s, %(bizowner)s, %(bizno)s, %(bidrank)s, %(bidprice)s, %(bidratio)s, %(biddiff)s)
-    ON CONFLICT (bidNo, bizNo) DO NOTHING;
+        INSERT INTO bidresults (bidno, bizname, bizowner, bizno, bidrank, bidprice, bidratio, biddiff) 
+        VALUES (%(bidno)s, %(bizname)s, %(bizowner)s, %(bizno)s, %(bidrank)s, %(bidprice)s, %(bidratio)s, %(biddiff)s)
+        ON CONFLICT (bidNo, bizNo) DO NOTHING;
     """
     result = data_module.update_many(query, params_list)
     if result:
@@ -219,10 +225,10 @@ def update_bidresults(bid_no, reprocess:bool):
     
 def update_bid_biz_count(bid_no, biz_count):
     query = """
-    UPDATE bids
-    SET biz_count = %(biz_count)s
-    WHERE bids.bidno = %(bidno)s
-    """
+        UPDATE bids
+        SET biz_count = %(biz_count)s
+        WHERE bids.bidno = %(bidno)s
+        """
     params = {
         "bidno": bid_no,
         "biz_count": biz_count
@@ -241,3 +247,58 @@ def update_finished_bid(reprocess):
     for index, bid in enumerate(bids):
         logger.info(f"Processing finished bid: {bid[0]}... Progress: {index+1}/{len(bids)}({((index+1)/len(bids))*100:.2f}%)")
         update_bidresults(bid[0], reprocess)
+
+def update_bid_region_restrictions(bid_no, bid_ord):
+    regions = request_module.request_region_restriction(bid_no, bid_ord)
+    if not regions:
+        return
+    params_list = []
+    for index, region in enumerate(regions):
+        logger.debug(f"Processing region restrictions of bid: {bid_no}... Progress: {index+1}/{len(regions)}({((index+1)/len(regions))*100:.2f}%)")
+        try:
+            params_list.append({
+                "bidno": bid_no,
+                "region": region
+            })
+        except Exception as e:
+            logger.error(f"Update failed by exception: {e}, while processing data: {region}")
+            logger.error(traceback.format_exc())
+            continue
+    query = """
+        INSERT INTO bidregions (bidno, region)
+        VALUES (%(bidno)s, %(region)s)
+        ON CONFLICT (bidno, region) 
+        DO UPDATE SET region = EXCLUDED.region;
+        """
+    result = data_module.update_many(query, params_list)
+    if result:
+        logger.debug(f"Complete: update_bid_region_restriction().")
+
+def update_bid_license_restriction(bid_no, bid_ord):
+    licenses = request_module.request_license_restrictions(bid_no, bid_ord)
+    if not licenses:
+        return
+    params_list = []
+    for index, license in enumerate(licenses):
+        logger.debug(f"Processing region restrictions of bid: {bid_no}... Progress: {index+1}/{len(licenses)}({((index+1)/len(licenses))*100:.2f}%)")
+        try:
+            params_list.append({
+                "bidno": bid_no,
+                "group_no": license[0],
+                "license": license[1]
+            })
+        except Exception as e:
+            logger.error(f"Update failed by exception: {e}, while processing data: {license}")
+            logger.error(traceback.format_exc())
+            continue
+    query = """
+        INSERT INTO bidlicense (bidno, group_no, license)
+        VALUES (%(bidno)s, %(group_no)s, %(license)s)
+        ON CONFLICT (bidno, license, group_no) 
+        DO UPDATE SET 
+            group_no = EXCLUDED.group_no,
+            license = EXCLUDED.license;
+        """
+    result = data_module.update_many(query, params_list)
+    if result:
+        logger.debug(f"Complete: update_bid_licence_restriction().")

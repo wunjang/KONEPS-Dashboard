@@ -68,7 +68,7 @@ def request_bids_by_region_and_industry(region:str, industry:str, date_begin:str
     items = response['response']['body'].get('items', [])
 
     if total_count == 0 or not items:
-        logger.info('Items not found from request')
+        logger.info('Items not found from request - request_bids_by_region_and_industry()')
         return None
     
     if page_no == 1:
@@ -104,7 +104,7 @@ def request_bid_by_bid_no(bid_no):
     item = response['response']['body'].get('items', [])
 
     if total_count == 0 or not item:
-        logger.warning('Items not found from request')
+        logger.warning(f'Items not found from request - request_bid_by_bid_no()')
         return None
     
     return item[0]
@@ -116,9 +116,8 @@ def request_bid_detail(bid_no):
     """
     url = bids_endpoint + '/getBidPblancListInfoCnstwkBsisAmount02'
 
-    num_of_rows = 999
     params = {
-        "numOfRows": str(num_of_rows),
+        "numOfRows": '999',
         "pageNo": '1',
         "inqryDiv": '2',
         "bidNtceNo": bid_no,
@@ -134,7 +133,7 @@ def request_bid_detail(bid_no):
     items = response['response']['body'].get('items', [])
 
     if total_count == 0 or not items:
-        logger.warning('Items not found from request')
+        logger.warning('Items not found from request - request_bid_detail()')
         return None
     
     item = items[0]
@@ -153,10 +152,62 @@ def request_bid_detail(bid_no):
     return a_value, base_price, price_range, d_value
 
 def request_region_restriction(bid_no, bid_ord):
-    pass
+    """
+    Returns:
+        region: 입찰 참가 가능 지역
+    """
+    url = bids_endpoint + '/getBidPblancListInfoPrtcptPsblRgn02'
+    params = {
+        "numOfRows": '999',
+        "pageNo": '1',
+        "inqryDiv": '2',
+        "bidNtceNo": bid_no,
+        "bidNtceOrd": bid_ord,
+        "type": "json"
+    }
+    response = _request_api_data(url=url, params=params)
 
-def request_licence_requirements(bid_no, bid_ord):
-    pass
+    if response is None or 'response' not in response or 'body' not in response['response']:
+        logger.error('Invalid or empty response from API')
+        return None
+    
+    total_count = response['response']['body'].get('totalCount', 0)
+    items = response['response']['body'].get('items', [])
+
+    if total_count == 0 or not items:
+        logger.info('Items not found from request - request_region_restriction()')
+        return None
+    
+    return [item['prtcptPsblRgnNm'] for item in items]
+
+def request_license_restrictions(bid_no, bid_ord):
+    """
+    Returns:
+        (그룹번호,업종)
+    """
+    url = bids_endpoint + '/getBidPblancListInfoLicenseLimit02'
+    params = {
+        "numOfRows": '999',
+        "pageNo": '1',
+        "inqryDiv": '2',
+        "bidNtceNo": bid_no,
+        "bidNtceOrd": bid_ord,
+        "type": "json"
+    }
+    response = _request_api_data(url=url, params=params)
+
+    if response is None or 'response' not in response or 'body' not in response['response']:
+        logger.error('Invalid or empty response from API')
+        return None
+    
+    total_count = response['response']['body'].get('totalCount', 0)
+    items = response['response']['body'].get('items', [])
+
+    if total_count == 0 or not items:
+        logger.info('Items not found from request - request_license_restrictions()')
+        return None
+    
+    return [(item['lmtGrpNo'], item['lcnsLmtNm']) for item in items]
 
 def request_bidresults(bid_no:str, page_no=1):
     # TODO. 재입찰 고려
@@ -178,7 +229,7 @@ def request_bidresults(bid_no:str, page_no=1):
     items = response['response']['body'].get('items', [])
 
     if total_count == 0 or not items:
-        logger.info('Items not found from request')
+        logger.info('Items not found from request - request_bidresults()')
         return None
     
     if total_count > num_of_rows * page_no:

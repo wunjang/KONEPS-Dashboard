@@ -78,7 +78,7 @@ def main():
     logger = logging_config(log_level, args.print)
 
     if args.bid_no:
-        update_module.update_bid(str(args.bid_no))
+        update_module.update_bid(str(args.bid_no), args.reprocess)
 
     if args.bid_date and check_valid_date(args.bid_date):
         update_module.update_bids('44', '4993', args.bid_date + '0000', args.bid_date + '2359', args.reprocess)
