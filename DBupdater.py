@@ -62,10 +62,9 @@ def check_valid_date(date_str:str)->bool:
 def main():
     parser = argparse.ArgumentParser(description="Example script with named arguments.")
     parser.add_argument('--log_level', type=str, help='log level', default='WARNING')
-    parser.add_argument('--print', action='store_true', help='print logs on console')
-    #TODO. 특정 공고 업데이트 기능
-    #parser.add_argument('--bid_no', type=str, help='find and update bid of bid_no')
+    parser.add_argument('--bid_no', type=str, help='find and update bid of bid_no')
     parser.add_argument('--bid_date', type=str, help='find and update bids of a single day, format: yyyyMMdd')
+    parser.add_argument('--print', action='store_true', help='print logs on console')
     parser.add_argument('--reprocess', action='store_true', help='process data already exist in database')
     
     # sub command
@@ -77,6 +76,9 @@ def main():
     # logging config
     log_level = parse_log_level(args.log_level)
     logger = logging_config(log_level, args.print)
+
+    if args.bid_no:
+        update_module.update_bid(str(args.bid_no))
 
     if args.bid_date and check_valid_date(args.bid_date):
         update_module.update_bids('44', '4993', args.bid_date + '0000', args.bid_date + '2359', args.reprocess)
