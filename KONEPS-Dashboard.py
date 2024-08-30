@@ -165,7 +165,7 @@ search_input.on_event('value_submit', search_callback)
 search_button = Button(label="검색", button_type="success")
 search_button.on_click(search_callback)
 
-make_search_url_callback = CustomJS(args=dict(
+search_url_callback = CustomJS(args=dict(
     search_radio=search_radio,
     search_input=search_input),
     code="""
@@ -180,8 +180,8 @@ make_search_url_callback = CustomJS(args=dict(
     window.history.pushState({}, '', url);
     """)
 
-search_button.js_on_click(make_search_url_callback)
-search_input.js_on_event('value_submit', make_search_url_callback)
+search_button.js_on_click(search_url_callback)
+search_input.js_on_event('value_submit', search_url_callback)
 
 search_alert_paragraph = Paragraph(text="")
 
@@ -241,6 +241,7 @@ wheel_zoom = WheelZoomTool()
 #bar_plot.toolbar.active_scroll = wheel_zoom
 #bar_plot.toolbar.active_scroll.axis = 'x'
 
+# bin count
 bin_count_slider = Slider(title="구간 갯수", start=1, end=120, value = 60, width=bar_plot.width)
 def bin_count_callback(attr, old, new):
     if search_radio.active == 0:
@@ -248,6 +249,12 @@ def bin_count_callback(attr, old, new):
     elif search_radio.active == 1:
         apply_bidresult_filter()
 bin_count_slider.on_change('value_throttled', bin_count_callback)
+bin_count_url_callback = CustomJS(args=dict(bin_count_slider=bin_count_slider), code="""
+    var url = new URL(window.location);
+    url.searchParams.set('bin_count', parseInt(bin_count_slider.value));
+    window.history.pushState({}, '', url);
+    """)
+bin_count_slider.js_on_change('value_throttled', bin_count_url_callback)
 
 date_picker_begin = DatePicker(title="시작일")
 date_picker_end = DatePicker(title="종료일")
@@ -266,15 +273,49 @@ def update_date_range_radio(attr, old, new):
     elif new == 3:
         date_picker_begin.value = today - relativedelta(years=1)
         date_picker_end.value = today
-
 date_range_radio.on_change('active', update_date_range_radio)
+
+date_begin_url_callback = CustomJS(args=dict(date_picker_begin=date_picker_begin), code="""
+    var url = new URL(window.location);
+    if (date_picker_begin.value) {
+        url.searchParams.set('date_begin', date_picker_begin.value);
+    } else {
+        url.searchParams.delete('date_begin');
+    }
+    window.history.pushState({}, '', url);
+    """)
+date_picker_begin.js_on_change('value', date_begin_url_callback)
+
+date_end_url_callback = CustomJS(args=dict(date_picker_end=date_picker_end), code="""
+    var url = new URL(window.location);
+    if (date_picker_end.value) {
+        url.searchParams.set('date_end', date_picker_end.value);
+    } else {
+        url.searchParams.delete('date_end');
+    }
+    window.history.pushState({}, '', url);
+    """)
+date_picker_end.js_on_change('value', date_end_url_callback)
 
 price_range_selected = None
 price_range_options = ["예가 범위",]
 price_range_radio = RadioButtonGroup(labels=price_range_options, active=0)
-
+price_range_url_callback = CustomJS(args=dict(price_range_radio=price_range_radio), code="""
+    var url = new URL(window.location);
+    url.searchParams.set('price_range', price_range_radio.active);
+    window.history.pushState({}, '', url);
+    """)
+price_range_radio.js_on_change('active', price_range_url_callback)
 
 biz_count_range_slider = RangeSlider(title="참여업체 수", start=0, end=1, step=1, value=(0,1))
+biz_count_url_callback = CustomJS(args=dict(biz_count_range_slider=biz_count_range_slider), code="""
+    var url = new URL(window.location);
+    url.searchParams.set('biz_count_min', parseInt(biz_count_range_slider.value[0]));
+    url.searchParams.set('biz_count_max', parseInt(biz_count_range_slider.value[1]));
+    window.history.pushState({}, '', url);
+    """)
+biz_count_range_slider.js_on_change('value_throttled', biz_count_url_callback)
+
 
 def apply_bidresult_filter():
     global fetched_data, price_range_selected
@@ -291,8 +332,12 @@ def apply_bidresult_filter():
     update_lineplot(filterd_data)
     update_datatable(filterd_data)
 
+
 def apply_bidresult_filter_callback(attr, old, new):
     apply_bidresult_filter()
+biz_count_range_slider.on_change('value_throttled', apply_bidresult_filter_callback)
+date_picker_begin.on_change('value', apply_bidresult_filter_callback)
+date_picker_end.on_change('value', apply_bidresult_filter_callback)
 
 def price_range_radio_callback(attr, old, new):
     global price_range_selected, price_range_options
@@ -301,7 +346,6 @@ def price_range_radio_callback(attr, old, new):
     else:
         price_range_selected = None
     apply_bidresult_filter()
-    print(f'price_range:{price_range_selected}')
 
 
 price_range_radio.on_change('active', price_range_radio_callback)
@@ -378,38 +422,6 @@ def show_biz_search_options(visible):
     for item in biz_search_options:
         item.visible = visible
 
-# make url parameters
-make_bizsearch_url_callback = CustomJS(args=dict(
-    search_radio=search_radio,
-    search_input=search_input,
-    bin_count_slider=bin_count_slider,
-    date_picker_begin=date_picker_begin,
-    date_picker_end=date_picker_end,
-    price_range_radio=price_range_radio,
-    biz_count_range_slider=biz_count_range_slider),
-    code="""
-    if (!search_input.value || search_input.value.trim() === "") {
-        return;
-    }
-
-    var url = new URL(window.location);
-    url.searchParams.set('search_option', search_radio.active);
-    url.searchParams.set('search_input', search_input.value);
-    url.searchParams.set('bin_count', bin_count_slider.value);
-    if (date_picker_begin.value) {
-        url.searchParams.set('date_begin', date_picker_begin.value);
-    }
-    if (date_picker_end.value) {
-        url.searchParams.set('date_end', date_picker_end.value);
-    }
-    url.searchParams.set('price_range', price_range_radio.active);
-    url.searchParams.set('biz_count_min', biz_count_range_slider.value[0]);
-    url.searchParams.set('biz_count_max', biz_count_range_slider.value[1]);
-
-    window.history.pushState({}, '', url);
-    """)
-apply_filter_button.js_on_click(make_bizsearch_url_callback)
-
 # reflect url parameters
 params = curdoc().session_context.request.arguments
 def reflect_url(params):
@@ -449,7 +461,7 @@ layout = column(
     search_radio, 
     row(search_input, search_button, search_alert_paragraph), 
     row(column(bar_plot, bin_count_slider), line_plot), 
-    row(date_picker_begin, date_picker_end, date_range_radio, apply_filter_button, reset_filter_button),
+    row(date_picker_begin, date_picker_end, date_range_radio, reset_filter_button),
     row(price_range_radio, biz_count_range_slider),
     data_table)
 
