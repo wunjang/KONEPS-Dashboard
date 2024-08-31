@@ -1,5 +1,5 @@
-import Data.data as data_module
-import Data.data_update as update_module
+import data_client.data as data_module
+import data_client.data_update as update_module
 import pandas as pd
 from bokeh.plotting import figure
 from bokeh.io import curdoc
