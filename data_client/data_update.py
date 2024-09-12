@@ -285,19 +285,21 @@ def update_bid_license_restriction(bid_no, bid_ord):
             params_list.append({
                 "bidno": bid_no,
                 "group_no": license[0],
-                "license": license[1]
+                "license": license[1],
+                "license_code": license[1][-4:]
             })
         except Exception as e:
             logger.error(f"Update failed by exception: {e}, while processing data: {license}")
             logger.error(traceback.format_exc())
             continue
     query = """
-        INSERT INTO bidlicense (bidno, group_no, license)
-        VALUES (%(bidno)s, %(group_no)s, %(license)s)
+        INSERT INTO bidlicense (bidno, group_no, license, license_code)
+        VALUES (%(bidno)s, %(group_no)s, %(license)s, %(license_code)s)
         ON CONFLICT (bidno, license, group_no) 
         DO UPDATE SET 
             group_no = EXCLUDED.group_no,
             license = EXCLUDED.license;
+            license_code = EXCLUDED.license_code
         """
     result = data_module.update_many(query, params_list)
     if result:
