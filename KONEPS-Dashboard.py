@@ -21,7 +21,6 @@ fetched_data = None
 def fetch_or_request_bid_by_bid_no(bid_no):
     bid = data_module.fetch_bidresults_by_bid_no(bid_no)
     if not bid:
-        curdoc().add_next_tick_callback(lambda: None)
         update_module.update_bid(bid_no, False)
         bid = data_module.fetch_bidresults_by_bid_no(bid_no)
     return bid
@@ -160,9 +159,9 @@ search_options = ["공고번호", "사업자번호"]
 search_radio = RadioButtonGroup(labels=search_options, active = 1)
 
 search_input = TextInput(value="")
-search_input.on_event('value_submit', search_callback)
+search_input.on_event('value_submit', search_callback, name="search_input")
 
-search_button = Button(label="검색", button_type="success")
+search_button = Button(label="검색", button_type="success", name="search_button")
 search_button.on_click(search_callback)
 
 search_url_callback = CustomJS(args=dict(

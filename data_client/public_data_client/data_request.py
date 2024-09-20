@@ -2,7 +2,7 @@ import requests
 import logging
 import data_client.public_data_client.api_key as api_key
 
-logger = logging.getLogger('data')
+logger = logging.getLogger('data_client')
 bids_endpoint = 'http://apis.data.go.kr/1230000/BidPublicInfoService05'
 bidresults_endpoint = 'http://apis.data.go.kr/1230000/ScsbidInfoService01'
 

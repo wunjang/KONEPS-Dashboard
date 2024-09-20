@@ -3,7 +3,7 @@ import data_client.public_data_client.data_request as request_module
 import logging
 import traceback
 
-logger = logging.getLogger('data')
+logger = logging.getLogger('data_client')
 def update_bids(region:str, industry:str, date_begin:str, date_end:str, reprocess:bool):
     """
     Params:
@@ -92,8 +92,8 @@ def update_bids(region:str, industry:str, date_begin:str, date_end:str, reproces
         for index, bid in enumerate(params_list):
             logger.info(f"Processing additional data of bid: {bid['bidNo']}-{bid['bidOrd']}... Progress: {index+1}/{len(params_list)}({((index+1)/len(params_list))*100:.2f}%)")
             update_bidresults(bid['bidNo'], reprocess)
-            update_bid_license_restriction(bid['bidNo'], bid['bidOrd'])
-            update_bid_region_restrictions(bid['bidNo'], bid['bidOrd'])
+            update_bid_license(bid['bidNo'], bid['bidOrd'])
+            update_bid_region(bid['bidNo'], bid['bidOrd'])
 
 def update_bid(bid_no, reprocess:bool):
     """
@@ -171,8 +171,8 @@ def update_bid(bid_no, reprocess:bool):
     if result:
         logger.info(f"Complete: update_bid().")
         update_bidresults(bid_no, reprocess)
-        update_bid_license_restriction(bid_no, bid_ord)
-        update_bid_region_restrictions(bid_no, bid_ord)
+        update_bid_license(bid_no, bid_ord)
+        update_bid_region(bid_no, bid_ord)
             
 
 def update_bidresults(bid_no, reprocess:bool):
@@ -237,18 +237,18 @@ def update_bid_biz_count(bid_no, biz_count):
     if result:
         logger.debug(f"Complete: update_bid_biz_count().")
 
-def update_finished_bid(reprocess):
+def update_finished_bid(reprocess:bool, date_begin, date_end):
     """
     개찰이 완료되었으나 결과가 업데이트 되지 않은 입찰을 확인하고 업데이트한다
     """
-    bids = data_module.fetch_bids_without_results()
+    bids = data_module.fetch_bids_without_results(date_begin, date_end)
     if not bids:
         return
     for index, bid in enumerate(bids):
         logger.info(f"Processing finished bid: {bid[0]}... Progress: {index+1}/{len(bids)}({((index+1)/len(bids))*100:.2f}%)")
         update_bidresults(bid[0], reprocess)
 
-def update_bid_region_restrictions(bid_no, bid_ord):
+def update_bid_region(bid_no, bid_ord):
     regions = request_module.request_region_restriction(bid_no, bid_ord)
     if not regions:
         return
@@ -272,15 +272,15 @@ def update_bid_region_restrictions(bid_no, bid_ord):
         """
     result = data_module.update_many(query, params_list)
     if result:
-        logger.debug(f"Complete: update_bid_region_restriction().")
+        logger.debug(f"Complete: update_bid_region().")
 
-def update_bid_license_restriction(bid_no, bid_ord):
+def update_bid_license(bid_no, bid_ord):
     licenses = request_module.request_license_restrictions(bid_no, bid_ord)
     if not licenses:
         return
     params_list = []
     for index, license in enumerate(licenses):
-        logger.debug(f"Processing region restrictions of bid: {bid_no}... Progress: {index+1}/{len(licenses)}({((index+1)/len(licenses))*100:.2f}%)")
+        logger.debug(f"Processing license restrictions of bid: {bid_no}... Progress: {index+1}/{len(licenses)}({((index+1)/len(licenses))*100:.2f}%)")
         try:
             params_list.append({
                 "bidno": bid_no,
@@ -298,9 +298,9 @@ def update_bid_license_restriction(bid_no, bid_ord):
         ON CONFLICT (bidno, license, group_no) 
         DO UPDATE SET 
             group_no = EXCLUDED.group_no,
-            license = EXCLUDED.license;
-            license_code = EXCLUDED.license_code
+            license = EXCLUDED.license,
+            license_code = EXCLUDED.license_code;
         """
     result = data_module.update_many(query, params_list)
     if result:
-        logger.debug(f"Complete: update_bid_licence_restriction().")
+        logger.debug(f"Complete: update_bid_license().")

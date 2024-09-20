@@ -1,10 +1,10 @@
-import Data.data as data_module
-import Data.data_update as update_module
+import data_client.data_update as update_module
+import data_client.data as data_module
 from datetime import date, timedelta, datetime
 import logging
-from logging.handlers import TimedRotatingFileHandler
-import sys
 import argparse
+import log.utils
+from concurrent.futures import ThreadPoolExecutor
 
 def daily_update(reprocess):
     """
@@ -13,10 +13,11 @@ def daily_update(reprocess):
     """
     today = date.today()
     yesterday = today - timedelta(days=1)
+    year_ago = today - timedelta(days=365)
     today_str = today.strftime('%Y%m%d') + "0000"
     yesterday_str = yesterday.strftime('%Y%m%d') + "0000"
     update_module.update_bids('44', '4993', date_end=today_str, date_begin=yesterday_str, reprocess=reprocess)
-    update_module.update_finished_bid(reprocess)
+    update_module.update_finished_bid(reprocess, date_begin=year_ago, date_end=today)
 
 def parse_log_level(log_level_str):
     log_levels = {
@@ -33,24 +34,6 @@ def parse_log_level(log_level_str):
         return int(log_level_str)
     
     return logging.WARNING # Default
-
-def logging_config(log_level:int, print_console:bool):
-    logger = logging.getLogger("data")
-    logger.setLevel(log_level)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    
-    file_handler = TimedRotatingFileHandler("DBupdater.log", when='midnight', interval=1, backupCount=10)
-    file_handler.setLevel(log_level)
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
-
-    if print_console:
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(log_level)
-        console_handler.setFormatter(formatter)
-        logger.addHandler(console_handler)
-
-    return logger
 
 def check_valid_date(date_str:str)->bool:
     try:
@@ -75,7 +58,7 @@ def main():
 
     # logging config
     log_level = parse_log_level(args.log_level)
-    logger = logging_config(log_level, args.print)
+    logger = log.utils.add_logger(name='data_client', log_level=log_level)
 
     if args.bid_no:
         update_module.update_bid(str(args.bid_no), args.reprocess)

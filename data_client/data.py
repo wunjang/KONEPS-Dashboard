@@ -5,7 +5,7 @@ from datetime import datetime, date
 import logging
 import traceback
 
-logger = logging.getLogger('data')
+logger = logging.getLogger('data_client')
 def _execute_query(query, params=None, fetch_results=True, many=False):
   try:
     conn = psycopg2.connect(
@@ -83,7 +83,7 @@ def fetch_bid_by_bid_no(bid_no):
   params = (bid_no,)
   result = fetch_single(query, params)
   if not result:
-    return None
+    return ()
   names = ["bid_no", "is_using_d_value", "bid_min", "base_price", "a_value", "industry", "bid_ord", "is_canceled", "price_range", "d_value", "bid_date", "biz_count"]
   return tuple_to_dict(names, result[0])
 
@@ -98,38 +98,38 @@ def fetch_bids_by_region_and_license(region, license):
   query = """
   SELECT b.*
   FROM bids b
-  JOIN bidregion br ON b.bidno = br.bidno
+  JOIN bidregions br ON b.bidno = br.bidno
   JOIN bidlicense bl ON b.bidno = bl.bidno
-  WHERE br.region = '%s' AND bl.license = '%s';
+  WHERE br.region = %s AND bl.license_code = %s;
   """
   params = (region, license)
   results = fetch_single(query, params)
   if not results:
-    return None
+    return ()
   return results
 
 def fetch_bid_regions(bid_no):
   """
   Returns:
-    (공고번호,지역)
+    (id,공고번호,지역)
   """
   query = "SELECT * FROM bidregions WHERE bidno = %s"
   params = (bid_no,)
   results = fetch_single(query, params)
   if not results:
-    return None
+    return ()
   return results
 
 def fetch_bid_licenses(bid_no):
   """
   Returns:
-    (공고번호,업종코드,그룹)
+    (id,공고번호,업종코드,그룹)
   """
   query = "SELECT * FROM bidlicense WHERE bidno = %s"
   params = (bid_no,)
   results = fetch_single(query, params)
   if not results:
-    return None
+    return ()
   return results
 
 def fetch_bid_no_list(bid_no_min, bid_no_max):
@@ -143,14 +143,14 @@ def fetch_bid_no_list(bid_no_min, bid_no_max):
   result = fetch_single(query, params)
   return result
 
-def fetch_bids_without_results():
+def fetch_bids_without_results(date_begin, date_end):
   """
   개찰 결과가 업데이트 되지 않은 공고들만 체크
   """
   query = """
-  SELECT b.bidno FROM bids b WHERE (b.biz_count = 0 OR b.biz_count IS NULL) AND b.iscanceled = False
+  SELECT b.bidno FROM bids b WHERE (b.biz_count = 0 OR b.biz_count IS NULL) AND b.iscanceled = False AND b.biddate >= %s AND b.biddate <= %s
   """
-  params = ()
+  params = (date_begin, date_end)
   result = fetch_single(query, params)
   return result
 
@@ -183,9 +183,9 @@ def fetch_bidresults_by_biz(biz_no):
 def fetch_bidresults_by_bid_list(bid_no_list):
   """
   Returns:
-    (id,공고번호,업체명,대표명,사업자번호,순위,입찰액,투찰율,사정율,예가범위,공고일자,참여업체)
+    (0.id,1.공고번호,2.업체명,3.대표명,4.사업자번호,5.순위,6.입찰액,7.투찰율,8.사정율,9.예가범위,10.공고일자,11.참여업체)
   """
-  query = sql.SQL("SELECT * FROM bidresults WHERE bidno = ANY(%s)")
+  query = "SELECT * FROM bidresults WHERE bidno = ANY(%s::text[])"
   return fetch_single(query, (bid_no_list,))
 
 def filter_bidresults(data_list, date_begin=None, date_end=None, price_range=None, biz_count_min=None, biz_count_max=None):
